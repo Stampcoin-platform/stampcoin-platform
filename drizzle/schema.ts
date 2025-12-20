@@ -1,17 +1,10 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
  */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
@@ -25,4 +18,107 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Categories table for stamp classification
+ */
+export const categories = mysqlTable("categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  nameAr: varchar("nameAr", { length: 100 }),
+  nameDe: varchar("nameDe", { length: 100 }),
+  nameFr: varchar("nameFr", { length: 100 }),
+  nameEs: varchar("nameEs", { length: 100 }),
+  nameZh: varchar("nameZh", { length: 100 }),
+  nameKo: varchar("nameKo", { length: 100 }),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = typeof categories.$inferInsert;
+
+/**
+ * Stamps table for digital stamp NFTs
+ */
+export const stamps = mysqlTable("stamps", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  titleAr: varchar("titleAr", { length: 200 }),
+  titleDe: varchar("titleDe", { length: 200 }),
+  titleFr: varchar("titleFr", { length: 200 }),
+  titleEs: varchar("titleEs", { length: 200 }),
+  titleZh: varchar("titleZh", { length: 200 }),
+  titleKo: varchar("titleKo", { length: 200 }),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  descriptionDe: text("descriptionDe"),
+  descriptionFr: text("descriptionFr"),
+  descriptionEs: text("descriptionEs"),
+  descriptionZh: text("descriptionZh"),
+  descriptionKo: text("descriptionKo"),
+  imageUrl: text("imageUrl"),
+  imageKey: varchar("imageKey", { length: 500 }),
+  categoryId: int("categoryId").notNull(),
+  country: varchar("country", { length: 100 }),
+  year: int("year"),
+  rarity: mysqlEnum("rarity", ["common", "uncommon", "rare", "very_rare", "legendary"]).default("common").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  isAvailable: boolean("isAvailable").default(true).notNull(),
+  ownerId: int("ownerId"),
+  authenticatedBy: varchar("authenticatedBy", { length: 200 }),
+  authenticationDate: timestamp("authenticationDate"),
+  mintNumber: int("mintNumber"),
+  totalMinted: int("totalMinted"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Stamp = typeof stamps.$inferSelect;
+export type InsertStamp = typeof stamps.$inferInsert;
+
+/**
+ * Transactions table for stamp purchases
+ */
+export const transactions = mysqlTable("transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  stampId: int("stampId").notNull(),
+  buyerId: int("buyerId").notNull(),
+  sellerId: int("sellerId"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["pending", "completed", "cancelled"]).default("pending").notNull(),
+  transactionHash: varchar("transactionHash", { length: 200 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = typeof transactions.$inferInsert;
+
+/**
+ * Favorites table for user's favorite stamps
+ */
+export const favorites = mysqlTable("favorites", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  stampId: int("stampId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Favorite = typeof favorites.$inferSelect;
+export type InsertFavorite = typeof favorites.$inferInsert;
+
+/**
+ * Contact messages table
+ */
+export const contactMessages = mysqlTable("contactMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  subject: varchar("subject", { length: 300 }).notNull(),
+  message: text("message").notNull(),
+  status: mysqlEnum("status", ["new", "read", "replied"]).default("new").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ContactMessage = typeof contactMessages.$inferSelect;
+export type InsertContactMessage = typeof contactMessages.$inferInsert;
