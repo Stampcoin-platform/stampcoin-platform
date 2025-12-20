@@ -4,6 +4,14 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { storagePut } from "./storage";
+import { randomBytes } from "crypto";
+import Stripe from 'stripe';
+import { STAMP_PRODUCTS } from './products';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-12-15.clover',
+});
 
 export const appRouter = router({
   system: systemRouter,
@@ -165,6 +173,84 @@ export const appRouter = router({
           buyerId: ctx.user.id,
           status: 'pending',
         });
+      }),
+  }),
+
+  // Upload
+  upload: router({    uploadImage: protectedProcedure
+      .input(z.object({
+        fileData: z.string(), // base64 encoded image
+        fileName: z.string(),
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const randomSuffix = randomBytes(8).toString('hex');
+        const fileKey = `stamps/${ctx.user.id}-${randomSuffix}-${input.fileName}`;
+        
+        // Convert base64 to buffer
+        const base64Data = input.fileData.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        // Upload to S3
+        const result = await storagePut(fileKey, buffer, input.mimeType);
+        
+        return {
+          url: result.url,
+          key: fileKey,
+        };
+      }),
+  }),
+
+  // Stripe Payments
+  payments: router({
+    createCheckout: protectedProcedure
+      .input(z.object({
+        stampId: z.number(),
+        productId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const product = STAMP_PRODUCTS[input.productId];
+        
+        if (!product) {
+          throw new Error('Product not found');
+        }
+
+        const origin = ctx.req.headers.origin || 'http://localhost:3000';
+
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: product.name,
+                  description: product.description,
+                },
+                unit_amount: Math.round(product.price * 100), // Convert to cents
+              },
+              quantity: 1,
+            },
+          ],
+          mode: 'payment',
+          success_url: `${origin}/dashboard?payment=success`,
+          cancel_url: `${origin}/marketplace?payment=cancelled`,
+          customer_email: ctx.user.email || undefined,
+          client_reference_id: ctx.user.id.toString(),
+          metadata: {
+            user_id: ctx.user.id.toString(),
+            customer_email: ctx.user.email || '',
+            customer_name: ctx.user.name || '',
+            stamp_id: input.stampId.toString(),
+            product_id: input.productId,
+          },
+          allow_promotion_codes: true,
+        });
+
+        return {
+          url: session.url,
+          sessionId: session.id,
+        };
       }),
   }),
 

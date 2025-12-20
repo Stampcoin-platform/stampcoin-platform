@@ -11,6 +11,7 @@ import Investors from "./pages/Investors";
 import Contact from "./pages/Contact";
 import Marketplace from "./pages/Marketplace";
 import StampDetail from "./pages/StampDetail";
+import Dashboard from "./pages/Dashboard";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/marketplace"} component={Marketplace} />
       <Route path={"/stamp/:id"} component={StampDetail} />
+      <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/gallery"} component={Gallery} />
       <Route path={"/about"} component={About} />
       <Route path={"/investors"} component={Investors} />
