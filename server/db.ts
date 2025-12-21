@@ -1,6 +1,6 @@
 import { eq, desc, and, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, stamps, categories, transactions, favorites, contactMessages, InsertStamp, InsertCategory, InsertTransaction, InsertFavorite, InsertContactMessage } from "../drizzle/schema";
+import { InsertUser, users, stamps, categories, transactions, favorites, contactMessages, reviews, partners, partnerBenefits, partnerTransactions, InsertStamp, InsertCategory, InsertTransaction, InsertFavorite, InsertContactMessage, InsertReview, InsertPartner, InsertPartnerBenefit, InsertPartnerTransaction, Partner } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -321,5 +321,233 @@ export async function markMessageAsRead(id: number) {
     .update(contactMessages)
     .set({ status: 'read' })
     .where(eq(contactMessages.id, id));
+  return result;
+}
+
+// ============ Review Operations ============
+
+export async function createReview(review: InsertReview) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [result] = await db.insert(reviews).values(review);
+  return result;
+}
+
+export async function getStampReviews(stampId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      id: reviews.id,
+      rating: reviews.rating,
+      comment: reviews.comment,
+      createdAt: reviews.createdAt,
+      userName: users.name,
+      userEmail: users.email,
+    })
+    .from(reviews)
+    .leftJoin(users, eq(reviews.userId, users.id))
+    .where(eq(reviews.stampId, stampId))
+    .orderBy(desc(reviews.createdAt));
+  
+  return result;
+}
+
+export async function getUserReviews(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select()
+    .from(reviews)
+    .where(eq(reviews.userId, userId))
+    .orderBy(desc(reviews.createdAt));
+  
+  return result;
+}
+
+export async function getStampAverageRating(stampId: number): Promise<{ average: number; count: number }> {
+  const db = await getDb();
+  if (!db) return { average: 0, count: 0 };
+  
+  const result = await db
+    .select({
+      average: sql<number>`AVG(${reviews.rating})`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(reviews)
+    .where(eq(reviews.stampId, stampId));
+  
+  return {
+    average: result[0]?.average ? Number(result[0].average) : 0,
+    count: result[0]?.count ? Number(result[0].count) : 0,
+  };
+}
+
+
+// ============ Partner Operations ============
+
+export async function createPartner(partner: InsertPartner) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(partners).values(partner);
+  return result;
+}
+
+export async function getPartnerById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(partners).where(eq(partners.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getPartnerByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(partners).where(eq(partners.userId, userId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getAllPartners(status?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (status) {
+    return await db
+      .select()
+      .from(partners)
+      .where(eq(partners.status, status as any))
+      .orderBy(desc(partners.totalInvestment));
+  }
+  
+  return await db
+    .select()
+    .from(partners)
+    .orderBy(desc(partners.totalInvestment));
+}
+
+export async function getPartnersByTier(tier: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(partners)
+    .where(and(eq(partners.tier, tier as any), eq(partners.status, 'active')))
+    .orderBy(desc(partners.totalInvestment));
+}
+
+export async function updatePartner(id: number, partner: Partial<InsertPartner>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.update(partners).set(partner).where(eq(partners.id, id));
+  return result;
+}
+
+export async function approvePartner(id: number, approvedBy: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .update(partners)
+    .set({
+      status: 'approved',
+      approvedBy,
+      approvalDate: new Date(),
+    })
+    .where(eq(partners.id, id));
+  return result;
+}
+
+export async function rejectPartner(id: number, approvedBy: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .update(partners)
+    .set({
+      status: 'rejected',
+      approvedBy,
+      approvalDate: new Date(),
+    })
+    .where(eq(partners.id, id));
+  return result;
+}
+
+// ============ Partner Benefits Operations ============
+
+export async function createPartnerBenefit(benefit: InsertPartnerBenefit) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(partnerBenefits).values(benefit);
+  return result;
+}
+
+export async function getPartnerBenefits(partnerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(partnerBenefits)
+    .where(and(eq(partnerBenefits.partnerId, partnerId), eq(partnerBenefits.isActive, true)))
+    .orderBy(desc(partnerBenefits.createdAt));
+}
+
+export async function deletePartnerBenefit(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.delete(partnerBenefits).where(eq(partnerBenefits.id, id));
+  return result;
+}
+
+// ============ Partner Transaction Operations ============
+
+export async function createPartnerTransaction(transaction: InsertPartnerTransaction) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(partnerTransactions).values(transaction);
+  return result;
+}
+
+export async function getPartnerTransactions(partnerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(partnerTransactions)
+    .where(eq(partnerTransactions.partnerId, partnerId))
+    .orderBy(desc(partnerTransactions.createdAt));
+}
+
+export async function getPartnerTotalEarnings(partnerId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db
+    .select({
+      total: sql<number>`SUM(${partnerTransactions.amount})`,
+    })
+    .from(partnerTransactions)
+    .where(and(eq(partnerTransactions.partnerId, partnerId), eq(partnerTransactions.status, 'completed')));
+
+  return result[0]?.total ? Number(result[0].total) : 0;
+}
+
+export async function updatePartnerTransaction(id: number, transaction: Partial<InsertPartnerTransaction>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.update(partnerTransactions).set(transaction).where(eq(partnerTransactions.id, id));
   return result;
 }

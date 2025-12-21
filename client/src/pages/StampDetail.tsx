@@ -1,19 +1,52 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Heart, ShoppingCart, ArrowLeft, Shield, Calendar, MapPin } from "lucide-react";
+import { Sparkles, Heart, ShoppingCart, ArrowLeft, Shield, Calendar, MapPin, Star } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 export default function StampDetail() {
   const params = useParams();
   const stampId = params.id ? parseInt(params.id) : 0;
 
+  const { user } = useAuth();
   const { data: stamp, isLoading } = trpc.stamps.getById.useQuery({ id: stampId });
+  const { data: reviews } = trpc.reviews.getStampReviews.useQuery({ stampId });
+  const { data: rating } = trpc.reviews.getStampRating.useQuery({ stampId });
+  const createReview = trpc.reviews.create.useMutation({
+    onSuccess: () => {
+      toast.success("Review submitted successfully!");
+      setReviewComment("");
+      setReviewRating(5);
+    },
+    onError: () => {
+      toast.error("Failed to submit review");
+    },
+  });
+  
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  
+  const handleSubmitReview = async () => {
+    if (!user) {
+      toast.error("Please login to submit a review");
+      return;
+    }
+    
+    await createReview.mutateAsync({
+      stampId,
+      rating: reviewRating,
+      comment: reviewComment || undefined,
+    });
+  };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-elegant flex items-center justify-center">
+      <div className="min-h-screen bg-vintage-texture flex items-center justify-center">
         <p className="text-muted-foreground">Loading stamp details...</p>
       </div>
     );
@@ -21,7 +54,7 @@ export default function StampDetail() {
 
   if (!stamp) {
     return (
-      <div className="min-h-screen bg-gradient-elegant flex items-center justify-center">
+      <div className="min-h-screen bg-vintage-texture flex items-center justify-center">
         <div className="text-center">
           <Sparkles className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <p className="text-xl font-medium text-foreground mb-2">Stamp not found</p>
@@ -34,7 +67,7 @@ export default function StampDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-elegant">
+    <div className="min-h-screen bg-vintage-texture">
       {/* Navigation */}
       <nav className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -193,6 +226,131 @@ export default function StampDetail() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="mt-16 max-w-6xl mx-auto">
+            <h2 className="text-3xl font-serif font-bold mb-8">Reviews & Ratings</h2>
+            
+            {/* Average Rating */}
+            {rating && rating.count > 0 && (
+              <Card className="mb-8 border-border/50 bg-gradient-to-br from-primary/5 to-secondary/5">
+                <CardContent className="p-8">
+                  <div className="flex items-center gap-6">
+                    <div className="text-6xl font-bold text-primary">{rating.average.toFixed(1)}</div>
+                    <div>
+                      <div className="flex items-center gap-1 mb-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-6 w-6 ${
+                              star <= Math.round(rating.average)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Based on {rating.count} {rating.count === 1 ? "review" : "reviews"}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Add Review Form */}
+            {user && (
+              <Card className="mb-8 border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <h3 className="text-xl font-serif font-semibold mb-4">Write a Review</h3>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Rating</label>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewRating(star)}
+                          className="transition-transform hover:scale-110"
+                        >
+                          <Star
+                            className={`h-8 w-8 ${
+                              star <= reviewRating
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Comment (Optional)</label>
+                    <Textarea
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      placeholder="Share your thoughts about this stamp..."
+                      rows={4}
+                    />
+                  </div>
+                  
+                  <Button
+                    onClick={handleSubmitReview}
+                    disabled={createReview.isPending}
+                  >
+                    {createReview.isPending ? "Submitting..." : "Submit Review"}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Reviews List */}
+            <div className="space-y-4">
+              {reviews && reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <Card key={review.id} className="border-border/50 bg-card/80 backdrop-blur-sm">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="font-semibold text-lg">{review.userName || "Anonymous"}</div>
+                          <div className="flex items-center gap-1 mt-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-4 w-4 ${
+                                  star <= review.rating
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-muted-foreground">{review.comment}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+                  <CardContent className="p-12 text-center">
+                    <Star className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      No reviews yet. Be the first to review this stamp!
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>

@@ -5,7 +5,7 @@ import { Link } from "wouter";
 
 export default function About() {
   return (
-    <div className="min-h-screen bg-gradient-elegant">
+    <div className="min-h-screen bg-vintage-texture">
       {/* Navigation */}
       <nav className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -39,9 +39,9 @@ export default function About() {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/10 to-secondary/10">
+      <section className="py-20 premium-section">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-5xl md:text-6xl font-serif font-bold text-foreground mb-6">
+          <h2 className="text-5xl md:text-6xl font-serif font-bold text-foreground mb-6 text-gold-foil text-shadow-luxury">
             About StampCoin
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">

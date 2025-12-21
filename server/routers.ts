@@ -207,51 +207,152 @@ export const appRouter = router({
       .input(z.object({
         stampId: z.number(),
         productId: z.string(),
+        paymentMethod: z.enum(['card', 'paypal', 'apple_pay', 'google_pay']).default('card'),
       }))
       .mutation(async ({ input, ctx }) => {
-        const product = STAMP_PRODUCTS[input.productId];
-        
-        if (!product) {
-          throw new Error('Product not found');
-        }
+        try {
+          const product = STAMP_PRODUCTS[input.productId];
+          
+          if (!product) {
+            throw new Error('Product not found');
+          }
 
-        const origin = ctx.req.headers.origin || 'http://localhost:3000';
+          const origin = ctx.req.headers.origin || 'http://localhost:3000';
+          
+          const paymentMethodMap: Record<string, string[]> = {
+            card: ['card'],
+            paypal: ['paypal'],
+            apple_pay: ['apple_pay'],
+            google_pay: ['google_pay'],
+          };
+          
+          const paymentMethods = paymentMethodMap[input.paymentMethod] || ['card'];
 
-        const session = await stripe.checkout.sessions.create({
-          payment_method_types: ['card'],
-          line_items: [
-            {
-              price_data: {
-                currency: 'usd',
-                product_data: {
-                  name: product.name,
-                  description: product.description,
+          const session = await stripe.checkout.sessions.create({
+            payment_method_types: paymentMethods as any,
+            line_items: [
+              {
+                price_data: {
+                  currency: 'usd',
+                  product_data: {
+                    name: product.name,
+                    description: product.description,
+                  },
+                  unit_amount: Math.round(product.price * 100),
                 },
-                unit_amount: Math.round(product.price * 100), // Convert to cents
+                quantity: 1,
               },
-              quantity: 1,
+            ],
+            mode: 'payment',
+            success_url: `${origin}/dashboard?payment=success&sessionId={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${origin}/marketplace?payment=cancelled`,
+            customer_email: ctx.user.email || undefined,
+            client_reference_id: ctx.user.id.toString(),
+            metadata: {
+              user_id: ctx.user.id.toString(),
+              customer_email: ctx.user.email || '',
+              customer_name: ctx.user.name || '',
+              stamp_id: input.stampId.toString(),
+              product_id: input.productId,
+              payment_method: input.paymentMethod,
             },
-          ],
-          mode: 'payment',
-          success_url: `${origin}/dashboard?payment=success`,
-          cancel_url: `${origin}/marketplace?payment=cancelled`,
-          customer_email: ctx.user.email || undefined,
-          client_reference_id: ctx.user.id.toString(),
-          metadata: {
-            user_id: ctx.user.id.toString(),
-            customer_email: ctx.user.email || '',
-            customer_name: ctx.user.name || '',
-            stamp_id: input.stampId.toString(),
-            product_id: input.productId,
-          },
-          allow_promotion_codes: true,
-        });
+            allow_promotion_codes: true,
+            billing_address_collection: 'auto',
+          });
 
-        return {
-          url: session.url,
-          sessionId: session.id,
-        };
+          return {
+            url: session.url,
+            sessionId: session.id,
+            paymentMethod: input.paymentMethod,
+          };
+        } catch (error: any) {
+          console.error('[Payments] Checkout creation failed:', error);
+          throw new Error(`Failed to create checkout session: ${error.message}`);
+        }
       }),
+    
+    validateCheckout: publicProcedure
+      .input(z.object({
+        sessionId: z.string(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const session = await stripe.checkout.sessions.retrieve(input.sessionId);
+          return {
+            status: session.payment_status,
+            paymentStatus: session.payment_status,
+            customerEmail: session.customer_email,
+            metadata: session.metadata,
+          };
+        } catch (error: any) {
+          console.error('[Payments] Session validation failed:', error);
+          throw new Error('Invalid session ID');
+        }
+      }),
+    
+    getPaymentMethods: publicProcedure.query(async () => {
+      return [
+        {
+          id: 'card',
+          name: 'Credit/Debit Card',
+          description: 'Visa, Mastercard, American Express, Discover',
+          icon: 'CreditCard',
+          supported: true,
+        },
+        {
+          id: 'paypal',
+          name: 'PayPal',
+          description: 'Fast and secure payments with PayPal',
+          icon: 'PayPal',
+          supported: true,
+        },
+        {
+          id: 'apple_pay',
+          name: 'Apple Pay',
+          description: 'Quick and secure payments with Apple Pay',
+          icon: 'Apple',
+          supported: true,
+        },
+        {
+          id: 'google_pay',
+          name: 'Google Pay',
+          description: 'Fast checkout with Google Pay',
+          icon: 'Google',
+          supported: true,
+        },
+      ];
+    }),
+  }),
+
+  // Reviews
+  reviews: router({    create: protectedProcedure
+      .input(z.object({
+        stampId: z.number(),
+        rating: z.number().min(1).max(5),
+        comment: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.createReview({
+          ...input,
+          userId: ctx.user.id,
+        });
+      }),
+    
+    getStampReviews: publicProcedure
+      .input(z.object({ stampId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getStampReviews(input.stampId);
+      }),
+    
+    getStampRating: publicProcedure
+      .input(z.object({ stampId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getStampAverageRating(input.stampId);
+      }),
+    
+    myReviews: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getUserReviews(ctx.user.id);
+    }),
   }),
 
   // Contact Messages
@@ -284,6 +385,137 @@ export const appRouter = router({
         }
         return await db.markMessageAsRead(input.id);
       }),
+  }),
+
+  // Partners
+  partners: router({
+    list: publicProcedure
+      .input(z.object({
+        status: z.string().optional(),
+        tier: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        if (input.status) {
+          return await db.getAllPartners(input.status);
+        }
+        return await db.getAllPartners();
+      }),
+    
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getPartnerById(input.id);
+      }),
+    
+    getByTier: publicProcedure
+      .input(z.object({ tier: z.string() }))
+      .query(async ({ input }) => {
+        return await db.getPartnersByTier(input.tier);
+      }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        companyName: z.string(),
+        companyNameAr: z.string().optional(),
+        description: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        website: z.string().optional(),
+        tier: z.enum(['bronze', 'silver', 'gold', 'platinum', 'diamond']),
+        totalInvestment: z.string(),
+        contactPerson: z.string().optional(),
+        contactEmail: z.string().optional(),
+        contactPhone: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.createPartner({
+          ...input,
+          userId: ctx.user.id,
+          status: 'pending',
+        });
+      }),
+    
+    getMyPartner: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getPartnerByUserId(ctx.user.id);
+    }),
+    
+    approve: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Unauthorized');
+        }
+        return await db.approvePartner(input.id, ctx.user.id);
+      }),
+    
+    reject: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Unauthorized');
+        }
+        return await db.rejectPartner(input.id, ctx.user.id);
+      }),
+    
+    benefits: router({
+      list: publicProcedure
+        .input(z.object({ partnerId: z.number() }))
+        .query(async ({ input }) => {
+          return await db.getPartnerBenefits(input.partnerId);
+        }),
+      
+      create: protectedProcedure
+        .input(z.object({
+          partnerId: z.number(),
+          benefitType: z.enum(['discount', 'commission', 'feature', 'support', 'branding', 'exclusive_access']),
+          description: z.string(),
+          value: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (ctx.user.role !== 'admin') {
+            throw new Error('Unauthorized');
+          }
+          return await db.createPartnerBenefit(input);
+        }),
+    }),
+    
+    transactions: router({
+      list: protectedProcedure
+        .input(z.object({ partnerId: z.number() }))
+        .query(async ({ input, ctx }) => {
+          const partner = await db.getPartnerById(input.partnerId);
+          if (!partner || (partner.userId !== ctx.user.id && ctx.user.role !== 'admin')) {
+            throw new Error('Unauthorized');
+          }
+          return await db.getPartnerTransactions(input.partnerId);
+        }),
+      
+      create: protectedProcedure
+        .input(z.object({
+          partnerId: z.number(),
+          type: z.enum(['purchase', 'commission', 'reward', 'refund']),
+          amount: z.string(),
+          description: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (ctx.user.role !== 'admin') {
+            throw new Error('Unauthorized');
+          }
+          return await db.createPartnerTransaction({
+            ...input,
+            status: 'pending',
+          });
+        }),
+      
+      getTotalEarnings: protectedProcedure
+        .input(z.object({ partnerId: z.number() }))
+        .query(async ({ input, ctx }) => {
+          const partner = await db.getPartnerById(input.partnerId);
+          if (!partner || (partner.userId !== ctx.user.id && ctx.user.role !== 'admin')) {
+            throw new Error('Unauthorized');
+          }
+          return await db.getPartnerTotalEarnings(input.partnerId);
+        }),
+    }),
   }),
 });
 

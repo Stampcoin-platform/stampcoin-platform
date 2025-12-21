@@ -65,7 +65,7 @@ export default function Gallery() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-elegant">
+    <div className="min-h-screen bg-stamps-luxury">
       {/* Navigation */}
       <nav className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -99,9 +99,9 @@ export default function Gallery() {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-16 bg-gradient-to-br from-primary/10 to-secondary/10">
+      <section className="py-16 premium-section text-center">
         <div className="container mx-auto px-4">
-          <h2 className="text-5xl font-serif font-bold text-foreground mb-4 text-center">
+          <h2 className="text-5xl font-serif font-bold text-foreground mb-4 text-gold-foil text-shadow-luxury">
             Stamp Gallery
           </h2>
           <p className="text-xl text-muted-foreground text-center max-w-2xl mx-auto">
@@ -133,7 +133,7 @@ export default function Gallery() {
                   <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="vintage">Vintage</SelectItem>
                   <SelectItem value="modern">Modern</SelectItem>
-                  <SelectItem value="commemorative">Commemorative</SelectItem>
+                  <SelectItem value="historical">Historical</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={selectedRarity} onValueChange={setSelectedRarity}>
@@ -157,55 +157,40 @@ export default function Gallery() {
       {/* Gallery Grid */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="stamps-grid-enhanced grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {stamps.map((stamp) => (
-              <Card key={stamp.id} className="hover-lift overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
-                <div className="aspect-square bg-gradient-to-br from-muted/50 to-muted/20 flex items-center justify-center">
-                  <Sparkles className="w-16 h-16 text-muted-foreground/30" />
-                </div>
-                <CardContent className="p-4">
-                  <div className={`text-xs font-semibold mb-2 ${getRarityColor(stamp.rarity)}`}>
-                    {getRarityLabel(stamp.rarity)}
-                  </div>
-                  <h3 className="font-serif font-semibold text-lg mb-2 line-clamp-2">
-                    {stamp.title}
-                  </h3>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
-                    <span>{stamp.country}</span>
-                    <span>{stamp.year}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-lg font-semibold text-primary">
-                      ${parseFloat(stamp.price).toLocaleString()}
+              <Card key={stamp.id} className="stamp-card-hover card-premium overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="aspect-square bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative overflow-hidden">
+                    <div className="text-center text-muted-foreground">
+                      <div className="text-6xl mb-2">🎫</div>
+                      <p className="text-sm">{stamp.title}</p>
                     </div>
-                    <Link href={`/stamp/${stamp.id}`}>
-                      <Button size="sm" variant="outline">
-                        View Details
-                      </Button>
-                    </Link>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <h3 className="text-lg font-serif font-bold text-foreground">{stamp.title}</h3>
+                      <p className="text-sm text-muted-foreground">{stamp.country} • {stamp.year}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        stamp.rarity === 'legendary' ? 'rarity-legendary text-white' :
+                        stamp.rarity === 'very_rare' ? 'rarity-very-rare text-white' :
+                        stamp.rarity === 'rare' ? 'rarity-rare text-white' :
+                        'rarity-uncommon text-white'
+                      }`}>
+                        {getRarityLabel(stamp.rarity)}
+                      </span>
+                      <span className="text-lg font-serif font-bold text-primary">${stamp.price}</span>
+                    </div>
+                    <Button className="w-full" variant="default">View Details</Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-
-          {/* Load More */}
-          <div className="mt-12 text-center">
-            <Button variant="outline" size="lg">
-              Load More Stamps
-            </Button>
-          </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/40 py-12 bg-background/80 mt-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 StampCoin. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -12,6 +12,8 @@ import Contact from "./pages/Contact";
 import Marketplace from "./pages/Marketplace";
 import StampDetail from "./pages/StampDetail";
 import Dashboard from "./pages/Dashboard";
+import Partners from "./pages/Partners";
+import PaymentResult from "./pages/PaymentResult";
 
 function Router() {
   return (
@@ -24,6 +26,8 @@ function Router() {
       <Route path={"/about"} component={About} />
       <Route path={"/investors"} component={Investors} />
       <Route path={"/contact"} component={Contact} />
+      <Route path={"/partners"} component={Partners} />
+      <Route path={"payment-result"} component={PaymentResult} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

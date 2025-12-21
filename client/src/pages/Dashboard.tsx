@@ -20,7 +20,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-elegant flex items-center justify-center">
+      <div className="min-h-screen bg-rare-stamps flex items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-elegant flex items-center justify-center">
+      <div className="min-h-screen bg-rare-stamps flex items-center justify-center">
         <Card className="max-w-md w-full mx-4">
           <CardHeader>
             <CardTitle className="text-center">Sign In Required</CardTitle>
@@ -47,7 +47,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-elegant">
+    <div className="min-h-screen bg-rare-stamps">
       {/* Navigation */}
       <nav className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">

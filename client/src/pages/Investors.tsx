@@ -5,7 +5,7 @@ import { Link } from "wouter";
 
 export default function Investors() {
   return (
-    <div className="min-h-screen bg-gradient-elegant">
+    <div className="min-h-screen bg-stamps-luxury">
       {/* Navigation */}
       <nav className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -39,10 +39,10 @@ export default function Investors() {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/10 to-secondary/10">
+      <section className="py-20 premium-section">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-5xl md:text-6xl font-serif font-bold text-foreground mb-6">
+            <h2 className="text-5xl md:text-6xl font-serif font-bold text-foreground mb-6 text-gold-foil text-shadow-luxury">
               Investment Opportunity
             </h2>
             <p className="text-xl text-muted-foreground mb-8">

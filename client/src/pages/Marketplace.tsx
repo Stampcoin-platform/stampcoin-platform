@@ -27,7 +27,7 @@ export default function Marketplace() {
   const { data: categories } = trpc.categories.list.useQuery();
 
   return (
-    <div className="min-h-screen bg-gradient-elegant">
+    <div className="min-h-screen bg-rare-stamps">
       {/* Navigation */}
       <nav className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -61,9 +61,9 @@ export default function Marketplace() {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-16 bg-gradient-to-br from-primary/10 to-secondary/10">
+      <section className="py-16 premium-section">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-5xl font-serif font-bold text-foreground mb-4">
+          <h2 className="text-5xl font-serif font-bold text-foreground mb-4 text-shadow-luxury">
             Digital Stamp Marketplace
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">

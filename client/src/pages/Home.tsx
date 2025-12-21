@@ -9,7 +9,7 @@ export default function Home() {
   const { user, isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-elegant">
+    <div className="min-h-screen bg-vintage-texture">
       {/* Navigation */}
       <nav className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -55,14 +55,14 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-4">
+      {/* Hero Section with Premium Background */}
+      <section className="py-20 md:py-32 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="animate-fade-in-up">
               <h2 className="text-5xl md:text-6xl font-serif font-bold text-foreground mb-6 leading-tight">
                 The Future of
-                <span className="text-primary block">Stamp Collecting</span>
+                <span className="text-gold-foil block text-shadow-luxury">Stamp Collecting</span>
               </h2>
               <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
                 Join 70+ million stamp collectors worldwide in the digital revolution. 

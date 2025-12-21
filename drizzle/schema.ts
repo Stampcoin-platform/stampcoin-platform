@@ -122,3 +122,83 @@ export const contactMessages = mysqlTable("contactMessages", {
 
 export type ContactMessage = typeof contactMessages.$inferSelect;
 export type InsertContactMessage = typeof contactMessages.$inferInsert;
+
+/**
+ * Reviews table for stamp ratings and feedback
+ */
+export const reviews = mysqlTable("reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  stampId: int("stampId").notNull().references(() => stamps.id, { onDelete: 'cascade' }),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  rating: int("rating").notNull(), // 1-5 stars
+  comment: text("comment"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = typeof reviews.$inferInsert;
+
+/**
+ * Partners table for tracking partners and supporters
+ */
+export const partners = mysqlTable("partners", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  companyName: varchar("companyName", { length: 200 }).notNull(),
+  companyNameAr: varchar("companyNameAr", { length: 200 }),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  website: varchar("website", { length: 500 }),
+  logo: text("logo"),
+  logoKey: varchar("logoKey", { length: 500 }),
+  tier: mysqlEnum("tier", ["bronze", "silver", "gold", "platinum", "diamond"]).notNull(),
+  totalInvestment: decimal("totalInvestment", { precision: 15, scale: 2 }).notNull(),
+  investmentDate: timestamp("investmentDate").defaultNow().notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "active", "inactive"]).default("pending").notNull(),
+  approvedBy: int("approvedBy"),
+  approvalDate: timestamp("approvalDate"),
+  benefits: text("benefits"),
+  contactPerson: varchar("contactPerson", { length: 200 }),
+  contactEmail: varchar("contactEmail", { length: 320 }),
+  contactPhone: varchar("contactPhone", { length: 20 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Partner = typeof partners.$inferSelect;
+export type InsertPartner = typeof partners.$inferInsert;
+
+/**
+ * Partner Benefits table for tracking partner perks and rewards
+ */
+export const partnerBenefits = mysqlTable("partnerBenefits", {
+  id: int("id").autoincrement().primaryKey(),
+  partnerId: int("partnerId").notNull().references(() => partners.id, { onDelete: 'cascade' }),
+  benefitType: mysqlEnum("benefitType", ["discount", "commission", "feature", "support", "branding", "exclusive_access"]).notNull(),
+  description: varchar("description", { length: 500 }).notNull(),
+  value: varchar("value", { length: 200 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PartnerBenefit = typeof partnerBenefits.$inferSelect;
+export type InsertPartnerBenefit = typeof partnerBenefits.$inferInsert;
+
+/**
+ * Partner Transactions table for tracking partner purchases and commissions
+ */
+export const partnerTransactions = mysqlTable("partnerTransactions", {
+  id: int("id").autoincrement().primaryKey(),
+  partnerId: int("partnerId").notNull().references(() => partners.id, { onDelete: 'cascade' }),
+  transactionId: int("transactionId").references(() => transactions.id),
+  type: mysqlEnum("type", ["purchase", "commission", "reward", "refund"]).notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  description: varchar("description", { length: 500 }),
+  status: mysqlEnum("status", ["pending", "completed", "failed"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type PartnerTransaction = typeof partnerTransactions.$inferSelect;
+export type InsertPartnerTransaction = typeof partnerTransactions.$inferInsert;
