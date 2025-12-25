@@ -19,4 +19,13 @@
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["mysql2", "drizzle-orm"]
+  included_files = ["node_modules/**", "server/**", "drizzle/**"]
+  external_node_modules = [
+    "mysql2",
+    "drizzle-orm",
+    "@aws-sdk/client-s3",
+    "@aws-sdk/s3-request-presigner",
+    "stripe",
+    "express",
+    "@trpc/server"
+  ]
