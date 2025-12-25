@@ -13,8 +13,8 @@ COPY . .
 # Install dependencies (now patches are available)
 RUN pnpm install --frozen-lockfile
 
-# Build the application
-RUN pnpm run build
+# Build frontend and backend
+RUN pnpm run build:frontend && pnpm run build
 
 # Expose port
 EXPOSE 3000
