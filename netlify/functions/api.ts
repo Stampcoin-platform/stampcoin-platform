@@ -1,20 +1,27 @@
-import type { Handler } from "@netlify/functions";
+import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 import serverlessExpress from "@vendia/serverless-express";
 import { app } from "../../server/_core/serverless";
 
-// Create the serverless handler
-const serverlessHandler = serverlessExpress({ app });
+// Create the serverless handler once
+let serverlessHandler: any;
 
-export const handler: Handler = async (event, context) => {
-  // Rewrite path to remove /.netlify/functions/api prefix
-  if (event.path.startsWith('/.netlify/functions/api')) {
-    event.path = event.path.replace('/.netlify/functions/api', '');
+const getHandler = () => {
+  if (!serverlessHandler) {
+    serverlessHandler = serverlessExpress({ app });
   }
+  return serverlessHandler;
+};
+
+export const handler: Handler = async (
+  event: HandlerEvent,
+  context: HandlerContext
+) => {
+  // Log for debugging
+  console.log('Netlify Function called:', event.path);
   
-  // Ensure path starts with /api for Express routing
-  if (!event.path.startsWith('/api')) {
-    event.path = '/api' + event.path;
-  }
+  // Get the serverless handler
+  const expressHandler = getHandler();
   
-  return serverlessHandler(event, context);
+  // Call the handler
+  return expressHandler(event, context);
 };
