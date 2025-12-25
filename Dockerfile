@@ -4,18 +4,14 @@ FROM node:22-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY pnpm-lock.yaml* ./
-
-# Install pnpm
+# Install pnpm globally first
 RUN npm install -g pnpm
 
-# Install dependencies
-RUN pnpm install
-
-# Copy all source files
+# Copy all files first (including patches directory)
 COPY . .
+
+# Install dependencies (now patches are available)
+RUN pnpm install --frozen-lockfile
 
 # Build the application
 RUN pnpm run build
