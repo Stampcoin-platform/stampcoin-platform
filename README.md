@@ -56,7 +56,7 @@ A revolutionary blockchain-powered NFT marketplace for digital asset ownership a
 
 2. **Install dependencies**
    ```bash
-   pnpm install
+  npm install
    ```
 
 3. **Configure environment variables**
@@ -80,10 +80,7 @@ A revolutionary blockchain-powered NFT marketplace for digital asset ownership a
    # Session
    JWT_SECRET=your-random-secret-key
    
-   # OAuth (Optional)
-   OAUTH_SERVER_URL=https://oauth.example.com
-   VITE_APP_ID=your-app-id
-   OWNER_OPEN_ID=your-owner-id
+
    
    # Node
    NODE_ENV=development
@@ -92,12 +89,12 @@ A revolutionary blockchain-powered NFT marketplace for digital asset ownership a
 
 4. **Push database schema**
    ```bash
-   pnpm run db:push
+   npm run db:push
    ```
 
 5. **Run development server**
    ```bash
-   pnpm run dev
+  npm run dev
    ```
 
    The app will be available at http://localhost:3000
@@ -107,13 +104,13 @@ A revolutionary blockchain-powered NFT marketplace for digital asset ownership a
 ### Build for production
 ```bash
 # Build frontend
-pnpm run build:frontend
+npm run build:frontend
 
 # Build backend
-pnpm run build
+npm run build
 
 # Start production server
-pnpm start
+npm start
 ```
 
 ### Deploy to Fly.io
@@ -179,25 +176,25 @@ stampcoin-platform/
 
 ```bash
 # Run tests
-pnpm test
+npm test
 
 # Type checking
-pnpm run check
+npm run check
 
 # Format code
-pnpm run format
+npm run format
 ```
 
 ## 🔧 Scripts
 
-- `pnpm dev` - Start development server
-- `pnpm build` - Build backend
-- `pnpm build:frontend` - Build frontend
-- `pnpm start` - Start production server
-- `pnpm test` - Run tests
-- `pnpm run check` - Type check
-- `pnpm run format` - Format code
-- `pnpm run db:push` - Push database schema
+- `npm dev` - Start development server
+- `npm build` - Build backend
+- `npm build:frontend` - Build frontend
+- `npm start` - Start production server
+- `npm test` - Run tests
+- `npm run check` - Type check
+- `npm run format` - Format code
+- `npm run db:push` - Push database schema
 
 ## 🐛 Troubleshooting
 
@@ -217,9 +214,9 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 Clear cache and rebuild:
 ```bash
 rm -rf node_modules dist client/dist
-pnpm install
-pnpm run build:frontend
-pnpm run build
+npm install
+npm run build:frontend
+npm run build
 ```
 
 ## 📄 License
