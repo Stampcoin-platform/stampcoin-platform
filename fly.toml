@@ -6,6 +6,11 @@
 app = 'stampcoin-platform'
 primary_region = 'fra'
 
+[env]
+  VITE_OAUTH_PORTAL_URL = "http://localhost:4000"
+  VITE_APP_ID = "stampcoin-platform"
+  NODE_ENV = "production"
+
 [build]
 
 [http_service]
