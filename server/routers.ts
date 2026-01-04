@@ -9,9 +9,32 @@ import { randomBytes } from "crypto";
 import Stripe from 'stripe';
 import { STAMP_PRODUCTS } from './products';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-12-15.clover',
-});
+function createTestStripeMock() {
+  return {
+    checkout: {
+      sessions: {
+        async create(_opts: any) {
+          return {
+            url: 'https://checkout.stripe.com/test_session',
+            id: 'sess_test_123',
+          } as any;
+        },
+        async retrieve(_id: string) {
+          return {
+            id: _id,
+            payment_status: 'paid',
+            customer_email: 'test@example.com',
+            metadata: {},
+          } as any;
+        },
+      },
+    },
+  } as any;
+}
+
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-12-15.clover' })
+  : (process.env.NODE_ENV === 'test' ? createTestStripeMock() : new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2025-12-15.clover' }));
 
 export const appRouter = router({
   system: systemRouter,
