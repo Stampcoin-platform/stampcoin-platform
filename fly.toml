@@ -18,6 +18,10 @@ primary_region = 'fra'
   # flyctl secrets set JWT_SECRET=your-secure-secret
 
 [build]
+  dockerfile = "Dockerfile"
+
+[build.args]
+  NODE_ENV = "production"
 
 [http_service]
   internal_port = 3000
