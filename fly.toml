@@ -10,7 +10,10 @@ primary_region = "fra"
   NODE_ENV = "production"
 
 [build]
-  dockerfile = "Dockerfile"
+  builder = "paketobuildpacks/builder:base"
+
+[build.buildpacks]
+  id = "paketo-buildpacks/nodejs"
 
 [http_service]
   internal_port = 3000
