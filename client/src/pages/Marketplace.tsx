@@ -18,6 +18,46 @@ export default function Marketplace() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedRarity, setSelectedRarity] = useState<string>("");
 
+  // Featured samples shown when API returns empty to keep the page rich with content
+  const featuredStamps = [
+    {
+      id: 1001,
+      title: "Blue Mauritius (1847)",
+      country: "Mauritius",
+      year: 1847,
+      rarity: "legendary",
+      price: "45000",
+      imageUrl: "/placeholder-stamp-2.jpg",
+    },
+    {
+      id: 1002,
+      title: "Rare Victorian Penny Black (1840)",
+      country: "United Kingdom",
+      year: 1840,
+      rarity: "very_rare",
+      price: "25000",
+      imageUrl: "/placeholder-stamp-1.jpg",
+    },
+    {
+      id: 1003,
+      title: "Inverted Jenny (1918)",
+      country: "United States",
+      year: 1918,
+      rarity: "rare",
+      price: "18000",
+      imageUrl: "/placeholder-stamp-3.jpg",
+    },
+    {
+      id: 1004,
+      title: "Zeppelin Airmail (1930)",
+      country: "Germany",
+      year: 1930,
+      rarity: "uncommon",
+      price: "5200",
+      imageUrl: "/placeholder-stamp-4.jpg",
+    },
+  ];
+
   const { data: stamps, isLoading } = trpc.stamps.list.useQuery({
     search: searchQuery || undefined,
     categoryId: selectedCategory ? parseInt(selectedCategory) : undefined,
@@ -25,6 +65,20 @@ export default function Marketplace() {
   });
 
   const { data: categories } = trpc.categories.list.useQuery();
+
+  const displayStamps = stamps && stamps.length > 0 ? stamps : featuredStamps;
+  const isEmpty = !isLoading && (!stamps || stamps.length === 0);
+
+  const formatRarity = (rarity: string) => {
+    const map: Record<string, string> = {
+      common: "Common",
+      uncommon: "Uncommon",
+      rare: "Rare",
+      very_rare: "Very Rare",
+      legendary: "Legendary",
+    };
+    return map[rarity] || rarity;
+  };
 
   return (
     <div className="min-h-screen bg-rare-stamps">
@@ -96,7 +150,7 @@ export default function Marketplace() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="">All Categories</SelectItem>
                   {categories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.name}
@@ -112,7 +166,7 @@ export default function Marketplace() {
                   <SelectValue placeholder="All Rarities" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Rarities</SelectItem>
+                  <SelectItem value="">All Rarities</SelectItem>
                   <SelectItem value="common">Common</SelectItem>
                   <SelectItem value="uncommon">Uncommon</SelectItem>
                   <SelectItem value="rare">Rare</SelectItem>
@@ -135,9 +189,9 @@ export default function Marketplace() {
             <div className="text-center py-12">
               <p className="text-muted-foreground">Loading stamps...</p>
             </div>
-          ) : stamps && stamps.length > 0 ? (
+          ) : displayStamps && displayStamps.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {stamps.map((stamp) => (
+              {displayStamps.map((stamp) => (
                 <Card
                   key={stamp.id}
                   className="group hover:shadow-xl transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden"
@@ -163,7 +217,7 @@ export default function Marketplace() {
                     </div>
                     <div className="absolute bottom-2 left-2">
                       <span className="px-3 py-1 rounded-full text-xs font-medium bg-background/80 backdrop-blur-sm">
-                        {stamp.rarity}
+                        {formatRarity(stamp.rarity || "")}
                       </span>
                     </div>
                   </div>
@@ -191,9 +245,25 @@ export default function Marketplace() {
             <div className="text-center py-12">
               <Sparkles className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-xl font-medium text-foreground mb-2">No stamps found</p>
-              <p className="text-muted-foreground">
-                Try adjusting your search or filter criteria
+              <p className="text-muted-foreground mb-6">
+                Try adjusting your search or filter criteria. We 27ve curated featured stamps for you below.
               </p>
+              <div className="max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {featuredStamps.map((stamp) => (
+                    <Card key={`featured-${stamp.id}`} className="border-border/50 bg-card/80 backdrop-blur-sm">
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold text-lg mb-1">{stamp.title}</h4>
+                        <p className="text-sm text-muted-foreground mb-2">{stamp.country}  95 {stamp.year}</p>
+                        <p className="text-sm text-primary font-bold mb-2">${stamp.price}</p>
+                        <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-background/60">
+                          {formatRarity(stamp.rarity)}
+                        </span>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
