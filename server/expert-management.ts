@@ -3,6 +3,20 @@
  * Handles expert onboarding, assignment, and performance tracking
  */
 
+import { and, desc, eq, sql } from "drizzle-orm";
+import {
+  expertApplications,
+  expertAssignments,
+  expertReviews,
+  users,
+  stampAuthentications,
+  type ExpertApplication as ExpertApplicationRow,
+  type ExpertAssignment,
+  type ExpertReview,
+  type User,
+} from "../drizzle/schema";
+import { getDb } from "./db";
+
 export interface ExpertProfile {
   userId: number;
   name: string;
@@ -34,6 +48,37 @@ export interface AssignmentRequest {
   priority: 'low' | 'normal' | 'high' | 'urgent';
   estimatedDays: number;
   compensation: string;
+  assignedBy?: number;
+}
+
+const PREFERRED_EXPERTISE = [
+  'victorian_stamps',
+  'modern_european',
+  'asian_philately',
+  'rare_classics',
+  'postage_due',
+  'airmail',
+  'commemoratives',
+  'postal_history',
+  'forgery_detection',
+  'conservation',
+];
+
+const ACTIVE_ASSIGNMENT_STATUSES = ['assigned', 'accepted', 'in_progress'] as const;
+
+function parseJsonArray(raw?: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_err) {
+    return [];
+  }
+}
+
+function stringifyJson(value?: unknown): string | null {
+  if (value === undefined) return null;
+  return JSON.stringify(value);
 }
 
 /**
@@ -46,21 +91,16 @@ export async function applyAsExpert(application: ExpertApplication): Promise<{
 }> {
   console.log('[Expert Management] New application from user:', application.userId);
 
-  // Validate expertise areas
-  const validAreas = [
-    'victorian_stamps',
-    'modern_european',
-    'asian_philately',
-    'rare_classics',
-    'postage_due',
-    'airmail',
-    'commemoratives',
-    'postal_history',
-    'forgery_detection',
-    'conservation',
-  ];
+  const db = await getDb();
+  if (!db) {
+    return {
+      success: false,
+      applicationId: 0,
+      message: 'Database not available',
+    };
+  }
 
-  const invalidAreas = application.expertiseAreas.filter(area => !validAreas.includes(area));
+  const invalidAreas = application.expertiseAreas.filter(area => !PREFERRED_EXPERTISE.includes(area));
   if (invalidAreas.length > 0) {
     return {
       success: false,
@@ -69,10 +109,18 @@ export async function applyAsExpert(application: ExpertApplication): Promise<{
     };
   }
 
-  // TODO: Create expertApplications record in database
-  const applicationId = Math.floor(Math.random() * 10000);
+  const [result] = await db.insert(expertApplications).values({
+    userId: application.userId,
+    expertiseAreas: stringifyJson(application.expertiseAreas),
+    credentials: application.credentials,
+    experience: application.experience,
+    references: stringifyJson(application.references),
+    certifications: stringifyJson(application.certifications),
+    motivation: application.motivation,
+    status: 'pending',
+  });
 
-  // TODO: Send notification to admins for review
+  const applicationId = (result as any)?.insertId ?? 0;
 
   return {
     success: true,
@@ -92,21 +140,52 @@ export async function reviewExpertApplication(
 ): Promise<{ success: boolean; message: string }> {
   console.log('[Expert Management] Reviewing application:', applicationId, approved);
 
-  // TODO: Update expertApplications record
-  // TODO: If approved, update user role to 'expert' and set verifiedExpert = true
-  // TODO: Send notification to applicant
+  const db = await getDb();
+  if (!db) {
+    return { success: false, message: 'Database not available' };
+  }
+
+  const [application] = await db
+    .select()
+    .from(expertApplications)
+    .where(eq(expertApplications.id, applicationId))
+    .limit(1);
+
+  if (!application) {
+    return { success: false, message: 'Application not found' };
+  }
+
+  await db
+    .update(expertApplications)
+    .set({
+      status: approved ? 'approved' : 'rejected',
+      reviewedBy: reviewerId,
+      reviewNotes: notes,
+      reviewedAt: new Date(),
+    })
+    .where(eq(expertApplications.id, applicationId));
 
   if (approved) {
+    await db
+      .update(users)
+      .set({
+        role: 'expert',
+        verifiedExpert: true,
+        expertiseAreas: application.expertiseAreas,
+        credentials: application.credentials,
+      })
+      .where(eq(users.id, application.userId));
+
     return {
       success: true,
       message: 'Expert application approved. User has been granted expert privileges.',
     };
-  } else {
-    return {
-      success: true,
-      message: `Expert application rejected. Reason: ${notes || 'Did not meet requirements'}`,
-    };
   }
+
+  return {
+    success: true,
+    message: `Expert application rejected. Reason: ${notes || 'Did not meet requirements'}`,
+  };
 }
 
 /**
@@ -119,23 +198,51 @@ export async function findBestExpert(requirements: {
 }): Promise<ExpertProfile | null> {
   console.log('[Expert Management] Finding expert for:', requirements.expertiseAreas);
 
-  // TODO: Query database for experts with:
-  // - Matching expertise areas
-  // - Rating >= minRating
-  // - Not in excludeExperts list
-  // - Currently available (not overloaded)
-  // Sort by: rating, total_authentications, current_workload
+  const db = await getDb();
+  if (!db) return null;
 
-  // Mock expert profile
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      expertiseAreas: users.expertiseAreas,
+      credentials: users.credentials,
+      expertRating: users.expertRating,
+      totalAuthentications: users.totalAuthentications,
+      verifiedExpert: users.verifiedExpert,
+    })
+    .from(users)
+    .where(and(eq(users.role, 'expert'), eq(users.verifiedExpert, true)))
+    .orderBy(desc(users.expertRating), desc(users.totalAuthentications), desc(users.createdAt));
+
+  const filtered = rows
+    .filter(row => {
+      if (requirements.excludeExperts?.includes(row.id)) return false;
+      const areas = parseJsonArray(row.expertiseAreas);
+      const matchesExpertise = requirements.expertiseAreas.length === 0
+        || requirements.expertiseAreas.some(area => areas.includes(area));
+      const meetsRating = requirements.minRating ? Number(row.expertRating ?? 0) >= requirements.minRating : true;
+      return matchesExpertise && meetsRating;
+    })
+    .sort((a, b) => {
+      const ratingDiff = Number(b.expertRating ?? 0) - Number(a.expertRating ?? 0);
+      if (ratingDiff !== 0) return ratingDiff;
+      return (b.totalAuthentications ?? 0) - (a.totalAuthentications ?? 0);
+    });
+
+  const best = filtered[0];
+  if (!best) return null;
+
   return {
-    userId: 42,
-    name: 'Dr. Jane Smith',
-    email: 'jane.smith@philately.org',
-    expertiseAreas: ['victorian_stamps', 'rare_classics', 'forgery_detection'],
-    credentials: 'PhD Philately, APS Certified Expert, 25 years experience',
-    expertRating: 4.85,
-    totalAuthentications: 342,
-    verifiedExpert: true,
+    userId: best.id,
+    name: best.name || 'Expert',
+    email: best.email || '',
+    expertiseAreas: parseJsonArray(best.expertiseAreas),
+    credentials: best.credentials || '',
+    expertRating: Number(best.expertRating ?? 0),
+    totalAuthentications: best.totalAuthentications ?? 0,
+    verifiedExpert: Boolean(best.verifiedExpert),
   };
 }
 
@@ -150,7 +257,11 @@ export async function assignExpert(request: AssignmentRequest): Promise<{
 }> {
   console.log('[Expert Management] Assigning expert for auth:', request.authenticationId);
 
-  // Find best available expert
+  const db = await getDb();
+  if (!db) {
+    return { success: false, message: 'Database not available' };
+  }
+
   const expert = await findBestExpert({
     expertiseAreas: request.expertiseRequired,
     minRating: 4.0,
@@ -163,11 +274,23 @@ export async function assignExpert(request: AssignmentRequest): Promise<{
     };
   }
 
-  // TODO: Create expertAssignments record
-  const assignmentId = Math.floor(Math.random() * 10000);
+  const [assignment] = await db.insert(expertAssignments).values({
+    authenticationId: request.authenticationId,
+    expertId: expert.userId,
+    assignedBy: request.assignedBy ?? expert.userId,
+    status: 'assigned',
+    priority: request.priority,
+    estimatedCompletionDays: request.estimatedDays,
+    compensation: request.compensation ? (request.compensation as any) : null,
+    createdAt: new Date(),
+  });
 
-  // TODO: Send notification to expert
-  // TODO: Update authentication status to 'in_progress'
+  await db
+    .update(stampAuthentications)
+    .set({ status: 'in_progress', verifierId: expert.userId })
+    .where(eq(stampAuthentications.id, request.authenticationId));
+
+  const assignmentId = (assignment as any)?.insertId ?? 0;
 
   return {
     success: true,
@@ -187,21 +310,49 @@ export async function autoAssignPendingTasks(): Promise<{
 }> {
   console.log('[Expert Management] Running auto-assignment...');
 
-  // TODO: Query pending authentications without assignments
-  // TODO: For each, find and assign best expert
-  // TODO: Track success/failure rates
+  const db = await getDb();
+  if (!db) {
+    return { assigned: 0, failed: 0, details: ['Database not available'] };
+  }
 
-  return {
-    assigned: 5,
-    failed: 0,
-    details: [
-      'Auth #123 assigned to Dr. Smith',
-      'Auth #124 assigned to Prof. Johnson',
-      'Auth #125 assigned to Dr. Lee',
-      'Auth #126 assigned to Dr. Patel',
-      'Auth #127 assigned to Prof. Garcia',
-    ],
-  };
+  const pendingAuthentications = await db
+    .select()
+    .from(stampAuthentications)
+    .where(eq(stampAuthentications.status, 'pending'))
+    .limit(20);
+
+  let assigned = 0;
+  let failed = 0;
+  const details: string[] = [];
+
+  for (const auth of pendingAuthentications) {
+    const existing = await db
+      .select()
+      .from(expertAssignments)
+      .where(eq(expertAssignments.authenticationId, auth.id))
+      .limit(1);
+
+    if (existing.length > 0) continue;
+
+    const result = await assignExpert({
+      authenticationId: auth.id,
+      expertiseRequired: [],
+      priority: 'normal',
+      estimatedDays: 7,
+      compensation: '0',
+      assignedBy: 0,
+    });
+
+    if (result.success && result.expert) {
+      assigned += 1;
+      details.push(`Auth #${auth.id} assigned to ${result.expert.name}`);
+    } else {
+      failed += 1;
+      details.push(`Auth #${auth.id} assignment failed: ${result.message}`);
+    }
+  }
+
+  return { assigned, failed, details };
 }
 
 /**
@@ -213,13 +364,50 @@ export async function getExpertWorkload(expertId: number): Promise<{
   averageCompletionDays: number;
   currentCapacity: 'low' | 'medium' | 'high' | 'full';
 }> {
-  // TODO: Query expertAssignments for expert
+  const db = await getDb();
+  if (!db) {
+    return {
+      activeAssignments: 0,
+      completedToday: 0,
+      averageCompletionDays: 0,
+      currentCapacity: 'low',
+    };
+  }
+
+  const assignments = await db
+    .select({
+      status: expertAssignments.status,
+      createdAt: expertAssignments.createdAt,
+      completedAt: expertAssignments.completedAt,
+      estimated: expertAssignments.estimatedCompletionDays,
+    })
+    .from(expertAssignments)
+    .where(eq(expertAssignments.expertId, expertId));
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const activeAssignments = assignments.filter(a => ACTIVE_ASSIGNMENT_STATUSES.includes(a.status as any)).length;
+  const completedToday = assignments.filter(a => a.completedAt && (a.completedAt as Date) >= today).length;
+
+  const completed = assignments.filter(a => a.completedAt && a.createdAt);
+  const averageCompletionDays = completed.length
+    ? completed.reduce((acc, a) => {
+        const diff = ((a.completedAt as Date).getTime() - (a.createdAt as Date).getTime()) / (1000 * 60 * 60 * 24);
+        return acc + diff;
+      }, 0) / completed.length
+    : 0;
+
+  let currentCapacity: 'low' | 'medium' | 'high' | 'full' = 'low';
+  if (activeAssignments >= 6) currentCapacity = 'full';
+  else if (activeAssignments >= 4) currentCapacity = 'high';
+  else if (activeAssignments >= 2) currentCapacity = 'medium';
 
   return {
-    activeAssignments: 3,
-    completedToday: 2,
-    averageCompletionDays: 4.2,
-    currentCapacity: 'medium',
+    activeAssignments,
+    completedToday,
+    averageCompletionDays: Number(averageCompletionDays.toFixed(2)),
+    currentCapacity,
   };
 }
 
@@ -251,9 +439,38 @@ export async function submitExpertReview(review: {
     };
   }
 
-  // TODO: Create expertReviews record
-  // TODO: Update expert's overall rating (rolling average)
-  // TODO: Send notification to expert
+  const db = await getDb();
+  if (!db) {
+    return { success: false, message: 'Database not available' };
+  }
+
+  await db.insert(expertReviews).values({
+    expertId: review.expertId,
+    reviewerId: review.reviewerId,
+    authenticationId: review.authenticationId,
+    rating: review.rating,
+    accuracy: review.accuracy,
+    timeliness: review.timeliness,
+    professionalism: review.professionalism,
+    comment: review.comment,
+  });
+
+  const [agg] = await db
+    .select({
+      averageRating: sql<string>`AVG(${expertReviews.rating})`,
+      authCount: sql<string>`COUNT(*)`,
+    })
+    .from(expertReviews)
+    .where(eq(expertReviews.expertId, review.expertId));
+
+  const newAverage = agg?.averageRating ? Number(agg.averageRating) : null;
+
+  if (newAverage !== null) {
+    await db
+      .update(users)
+      .set({ expertRating: newAverage })
+      .where(eq(users.id, review.expertId));
+  }
 
   return {
     success: true,
@@ -279,32 +496,86 @@ export async function getExpertStats(expertId: number): Promise<{
 }> {
   console.log('[Expert Management] Getting stats for expert:', expertId);
 
-  // TODO: Query database for comprehensive stats
+  const db = await getDb();
+  if (!db) {
+    return {
+      totalAuthentications: 0,
+      averageRating: 0,
+      accuracyRate: 0,
+      averageCompletionDays: 0,
+      onTimeRate: 0,
+      specialties: [],
+      recentReviews: [],
+    };
+  }
+
+  const [user] = await db
+    .select({
+      expertiseAreas: users.expertiseAreas,
+      expertRating: users.expertRating,
+      totalAuthentications: users.totalAuthentications,
+    })
+    .from(users)
+    .where(eq(users.id, expertId))
+    .limit(1);
+
+  const assignments = await db
+    .select({
+      status: expertAssignments.status,
+      createdAt: expertAssignments.createdAt,
+      completedAt: expertAssignments.completedAt,
+      estimated: expertAssignments.estimatedCompletionDays,
+    })
+    .from(expertAssignments)
+    .where(eq(expertAssignments.expertId, expertId));
+
+  const completed = assignments.filter(a => a.status === 'completed' && a.completedAt && a.createdAt);
+  const totalAuthentications = completed.length;
+
+  const averageCompletionDays = completed.length
+    ? completed.reduce((acc, a) => {
+        const diff = ((a.completedAt as Date).getTime() - (a.createdAt as Date).getTime()) / (1000 * 60 * 60 * 24);
+        return acc + diff;
+      }, 0) / completed.length
+    : 0;
+
+  const onTimeAssignments = completed.filter(a => {
+    if (!a.estimated || !a.createdAt || !a.completedAt) return false;
+    const expected = (a.createdAt as Date).getTime() + a.estimated * 24 * 60 * 60 * 1000;
+    return (a.completedAt as Date).getTime() <= expected;
+  }).length;
+
+  const [reviewAgg] = await db
+    .select({
+      averageRating: sql<string>`AVG(${expertReviews.rating})`,
+      averageAccuracy: sql<string>`AVG(${expertReviews.accuracy})`,
+    })
+    .from(expertReviews)
+    .where(eq(expertReviews.expertId, expertId));
+
+  const recentReviews = await db
+    .select({
+      rating: expertReviews.rating,
+      comment: expertReviews.comment,
+      date: expertReviews.createdAt,
+    })
+    .from(expertReviews)
+    .where(eq(expertReviews.expertId, expertId))
+    .orderBy(desc(expertReviews.createdAt))
+    .limit(5);
 
   return {
-    totalAuthentications: 342,
-    averageRating: 4.85,
-    accuracyRate: 0.96,
-    averageCompletionDays: 4.2,
-    onTimeRate: 0.93,
-    specialties: ['Victorian stamps', 'Rare classics', 'Forgery detection'],
-    recentReviews: [
-      {
-        rating: 5,
-        comment: 'Excellent work, very thorough analysis',
-        date: new Date('2025-12-20'),
-      },
-      {
-        rating: 5,
-        comment: 'Fast turnaround and accurate assessment',
-        date: new Date('2025-12-18'),
-      },
-      {
-        rating: 4,
-        comment: 'Good work, minor delay but quality results',
-        date: new Date('2025-12-15'),
-      },
-    ],
+    totalAuthentications,
+    averageRating: reviewAgg?.averageRating ? Number(reviewAgg.averageRating) : Number(user?.expertRating ?? 0),
+    accuracyRate: reviewAgg?.averageAccuracy ? Number(reviewAgg.averageAccuracy) / 5 : 0,
+    averageCompletionDays: Number(averageCompletionDays.toFixed(2)),
+    onTimeRate: completed.length ? Number((onTimeAssignments / completed.length).toFixed(2)) : 0,
+    specialties: parseJsonArray(user?.expertiseAreas),
+    recentReviews: recentReviews.map(r => ({
+      rating: r.rating,
+      comment: r.comment || '',
+      date: r.date as Date,
+    })),
   };
 }
 
@@ -318,31 +589,59 @@ export async function getAvailableExperts(filters?: {
 }): Promise<ExpertProfile[]> {
   console.log('[Expert Management] Getting available experts');
 
-  // TODO: Query database with filters
+  const db = await getDb();
+  if (!db) return [];
 
-  // Mock list
-  return [
-    {
-      userId: 42,
-      name: 'Dr. Jane Smith',
-      email: 'jane.smith@example.com',
-      expertiseAreas: ['victorian_stamps', 'rare_classics'],
-      credentials: 'PhD, APS Certified',
-      expertRating: 4.85,
-      totalAuthentications: 342,
-      verifiedExpert: true,
-    },
-    {
-      userId: 43,
-      name: 'Prof. John Johnson',
-      email: 'john.j@example.com',
-      expertiseAreas: ['modern_european', 'airmail'],
-      credentials: 'Professor of Philately, RPS Fellow',
-      expertRating: 4.72,
-      totalAuthentications: 298,
-      verifiedExpert: true,
-    },
-  ];
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      expertiseAreas: users.expertiseAreas,
+      credentials: users.credentials,
+      expertRating: users.expertRating,
+      totalAuthentications: users.totalAuthentications,
+      verifiedExpert: users.verifiedExpert,
+    })
+    .from(users)
+    .where(and(eq(users.role, 'expert'), eq(users.verifiedExpert, true)))
+    .orderBy(desc(users.expertRating), desc(users.totalAuthentications));
+
+  const experts: ExpertProfile[] = [];
+
+  for (const row of rows) {
+    const areas = parseJsonArray(row.expertiseAreas);
+    if (filters?.expertiseArea && !areas.includes(filters.expertiseArea)) continue;
+    if (filters?.minRating && Number(row.expertRating ?? 0) < filters.minRating) continue;
+
+    if (filters?.maxWorkload !== undefined) {
+      const workload = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(expertAssignments)
+        .where(
+          and(
+            eq(expertAssignments.expertId, row.id),
+            sql`${expertAssignments.status} in ('assigned','accepted','in_progress')`
+          )
+        );
+
+      const activeCount = workload[0]?.count ? Number(workload[0].count) : 0;
+      if (activeCount > filters.maxWorkload) continue;
+    }
+
+    experts.push({
+      userId: row.id,
+      name: row.name || 'Expert',
+      email: row.email || '',
+      expertiseAreas: areas,
+      credentials: row.credentials || '',
+      expertRating: Number(row.expertRating ?? 0),
+      totalAuthentications: row.totalAuthentications ?? 0,
+      verifiedExpert: Boolean(row.verifiedExpert),
+    });
+  }
+
+  return experts;
 }
 
 /**
@@ -355,26 +654,45 @@ export async function getExpertLeaderboard(limit: number = 10): Promise<Array<{
 }>> {
   console.log('[Expert Management] Getting leaderboard');
 
-  // TODO: Calculate composite score based on:
-  // - Rating
-  // - Total authentications
-  // - Accuracy rate
-  // - Response time
+  const db = await getDb();
+  if (!db) return [];
 
-  return [
-    {
-      rank: 1,
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      expertiseAreas: users.expertiseAreas,
+      credentials: users.credentials,
+      expertRating: users.expertRating,
+      totalAuthentications: users.totalAuthentications,
+      verifiedExpert: users.verifiedExpert,
+    })
+    .from(users)
+    .where(and(eq(users.role, 'expert'), eq(users.verifiedExpert, true)))
+    .orderBy(desc(users.expertRating), desc(users.totalAuthentications))
+    .limit(limit);
+
+  const leaderboard = rows.map((row, index) => {
+    const rating = Number(row.expertRating ?? 0);
+    const totalAuth = row.totalAuthentications ?? 0;
+    const score = rating * 20 + totalAuth * 0.1; // weighted composite
+
+    return {
+      rank: index + 1,
       expert: {
-        userId: 42,
-        name: 'Dr. Jane Smith',
-        email: 'jane@example.com',
-        expertiseAreas: ['victorian_stamps'],
-        credentials: 'PhD, APS Certified',
-        expertRating: 4.95,
-        totalAuthentications: 523,
-        verifiedExpert: true,
+        userId: row.id,
+        name: row.name || 'Expert',
+        email: row.email || '',
+        expertiseAreas: parseJsonArray(row.expertiseAreas),
+        credentials: row.credentials || '',
+        expertRating: rating,
+        totalAuthentications: totalAuth,
+        verifiedExpert: Boolean(row.verifiedExpert),
       },
-      score: 98.5,
-    },
-  ];
+      score: Number(score.toFixed(2)),
+    };
+  });
+
+  return leaderboard;
 }

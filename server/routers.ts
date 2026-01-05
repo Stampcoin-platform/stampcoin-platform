@@ -762,7 +762,7 @@ export const appRouter = router({
   // Expert Network Management
   experts: router({
     // Apply to become an expert
-    apply: protectedProcedure
+    applyAsExpert: protectedProcedure
       .input(z.object({
         expertiseAreas: z.array(z.string()),
         credentials: z.string(),
@@ -825,7 +825,10 @@ export const appRouter = router({
         if (ctx.user.role !== 'admin' && ctx.user.role !== 'expert') {
           throw new Error('Unauthorized');
         }
-        return await expertManagement.assignExpert(input);
+        return await expertManagement.assignExpert({
+          ...input,
+          assignedBy: ctx.user.id,
+        });
       }),
     
     // Get expert workload
