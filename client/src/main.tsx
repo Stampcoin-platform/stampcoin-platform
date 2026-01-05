@@ -8,6 +8,22 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
+const analyticsEndpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT;
+const analyticsWebsiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID;
+
+function injectAnalytics() {
+  if (typeof document === "undefined") return;
+  if (!analyticsEndpoint || !analyticsWebsiteId) return;
+  const existing = document.querySelector(`script[data-website-id="${analyticsWebsiteId}"]`);
+  if (existing) return;
+
+  const script = document.createElement("script");
+  script.defer = true;
+  script.src = `${analyticsEndpoint.replace(/\/$/, "")}/umami`;
+  script.dataset.websiteId = analyticsWebsiteId;
+  document.body.appendChild(script);
+}
+
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
@@ -51,6 +67,8 @@ const trpcClient = trpc.createClient({
     }),
   ],
 });
+
+injectAnalytics();
 
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
