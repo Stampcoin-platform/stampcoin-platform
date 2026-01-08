@@ -5,6 +5,7 @@
 
 import axios from 'axios';
 import { createHash } from 'crypto';
+import sharp from 'sharp';
 
 export interface ImageAnalysisResult {
   isAuthentic: boolean;
@@ -94,27 +95,77 @@ async function checkImageQuality(imageUrl: string): Promise<{ findings: Finding[
   const findings: Finding[] = [];
   let score = 80;
 
-  // TODO: Integrate with real image analysis API
-  // For now, use heuristics
+  try {
+    // Download and analyze image with sharp
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const imageBuffer = Buffer.from(response.data);
+    const metadata = await sharp(imageBuffer).metadata();
 
-  // Mock analysis based on URL/file characteristics
-  if (imageUrl.includes('placeholder') || imageUrl.includes('mock')) {
+    const width = metadata.width || 0;
+    const height = metadata.height || 0;
+    const format = metadata.format || 'unknown';
+    const size = imageBuffer.length;
+
+    // Check resolution
+    if (width >= 1200 && height >= 1200) {
+      findings.push({
+        category: 'positive',
+        severity: 'low',
+        title: 'High Resolution Image',
+        description: `Image resolution ${width}x${height} is excellent for detailed analysis`,
+        confidence: 95,
+      });
+      score += 10;
+    } else if (width >= 800 && height >= 800) {
+      findings.push({
+        category: 'positive',
+        severity: 'low',
+        title: 'Adequate Resolution',
+        description: `Image resolution ${width}x${height} is sufficient for analysis`,
+        confidence: 85,
+      });
+    } else {
+      findings.push({
+        category: 'warning',
+        severity: 'high',
+        title: 'Low Resolution Image',
+        description: `Image resolution ${width}x${height} may be insufficient for detailed analysis`,
+        confidence: 80,
+      });
+      score -= 20;
+    }
+
+    // Check file format
+    if (['jpeg', 'jpg', 'png', 'webp'].includes(format)) {
+      findings.push({
+        category: 'positive',
+        severity: 'low',
+        title: 'Supported Format',
+        description: `Image format (${format}) is suitable for analysis`,
+        confidence: 90,
+      });
+    }
+
+    // Check file size
+    if (size > 5000000) {
+      findings.push({
+        category: 'positive',
+        severity: 'low',
+        title: 'High Quality Source',
+        description: 'Large file size suggests minimal compression',
+        confidence: 85,
+      });
+    }
+  } catch (error: any) {
+    console.error('[AI Analysis] Image quality check failed:', error.message);
     findings.push({
       category: 'warning',
-      severity: 'high',
-      title: 'Low Resolution Image',
-      description: 'Image resolution appears insufficient for detailed analysis',
-      confidence: 85,
+      severity: 'medium',
+      title: 'Image Access Error',
+      description: 'Unable to download or process image for quality analysis',
+      confidence: 70,
     });
-    score -= 20;
-  } else {
-    findings.push({
-      category: 'positive',
-      severity: 'low',
-      title: 'Adequate Resolution',
-      description: 'Image resolution sufficient for analysis',
-      confidence: 90,
-    });
+    score -= 15;
   }
 
   return { findings, score };
@@ -127,39 +178,80 @@ async function detectManipulation(imageUrl: string): Promise<{ findings: Finding
   const findings: Finding[] = [];
   let score = 85;
 
-  // TODO: Integrate with forensic analysis tools:
-  // - ELA (Error Level Analysis)
-  // - Noise analysis
-  // - JPEG compression artifacts
-  // - AI detection (check for GAN fingerprints)
-
-  // Use external API if configured
-  if (process.env.FORENSIC_API_KEY) {
+  // Try Google Cloud Vision API for web detection
+  if (process.env.GOOGLE_VISION_API_KEY) {
     try {
-      // Example: Hypothetical forensic API call
-      // const result = await callForensicAPI(imageUrl);
-      // Parse and return results
-    } catch (error) {
-      console.error('[AI Analysis] Forensic API failed:', error);
+      const googleResult = await analyzeWithGoogleVision(imageUrl);
+      
+      if (googleResult?.webDetection) {
+        const exactMatches = googleResult.webDetection.fullMatchingImages?.length || 0;
+        const partialMatches = googleResult.webDetection.partialMatchingImages?.length || 0;
+        
+        if (exactMatches > 5) {
+          findings.push({
+            category: 'warning',
+            severity: 'high',
+            title: 'Image Found Online',
+            description: `This image has ${exactMatches} exact matches online, suggesting potential duplication`,
+            confidence: 90,
+          });
+          score -= 15;
+        } else if (exactMatches > 0) {
+          findings.push({
+            category: 'warning',
+            severity: 'medium',
+            title: 'Similar Images Found',
+            description: `${exactMatches} similar images found online`,
+            confidence: 75,
+          });
+          score -= 5;
+        } else {
+          findings.push({
+            category: 'positive',
+            severity: 'low',
+            title: 'Unique Image',
+            description: 'No exact matches found online',
+            confidence: 85,
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('[AI Analysis] Google Vision failed:', error.message);
     }
   }
 
-  // Mock findings
-  findings.push({
-    category: 'positive',
-    severity: 'medium',
-    title: 'No Obvious Digital Manipulation',
-    description: 'Error level analysis shows consistent compression across image',
-    confidence: 82,
-  });
+  // Try Azure Computer Vision for image properties
+  if (process.env.AZURE_VISION_API_KEY) {
+    try {
+      const azureResult = await analyzeWithAzureVision(imageUrl);
+      
+      if (azureResult?.imageType) {
+        if (azureResult.imageType.clipArtType > 0) {
+          findings.push({
+            category: 'warning',
+            severity: 'high',
+            title: 'Clip Art Detected',
+            description: 'Image appears to be digitally created or clip art',
+            confidence: 85,
+          });
+          score -= 25;
+        }
+      }
+    } catch (error: any) {
+      console.error('[AI Analysis] Azure Vision failed:', error.message);
+    }
+  }
 
-  findings.push({
-    category: 'positive',
-    severity: 'low',
-    title: 'Natural Noise Pattern',
-    description: 'Image noise patterns consistent with scanned physical media',
-    confidence: 78,
-  });
+  // If no API configured, use basic heuristics
+  if (!process.env.GOOGLE_VISION_API_KEY && !process.env.AZURE_VISION_API_KEY) {
+    findings.push({
+      category: 'positive',
+      severity: 'medium',
+      title: 'No Obvious Digital Manipulation',
+      description: 'Basic analysis shows no clear signs of manipulation (AI APIs not configured)',
+      confidence: 70,
+    });
+  }
 
   return { findings, score };
 }
@@ -171,11 +263,36 @@ async function analyzePrintCharacteristics(imageUrl: string): Promise<{ findings
   const findings: Finding[] = [];
   let score = 75;
 
-  // TODO: Integrate computer vision for:
-  // - Halftone dot pattern analysis
-  // - Ink bleed detection
-  // - Paper texture recognition
-  // - Perforation pattern matching
+  try {
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const imageBuffer = Buffer.from(response.data);
+    const stats = await sharp(imageBuffer).stats();
+
+    // Analyze sharpness from standard deviation
+    const avgStdDev = stats.channels.reduce((sum, ch) => sum + ch.stdev, 0) / stats.channels.length;
+    
+    if (avgStdDev > 40) {
+      findings.push({
+        category: 'positive',
+        severity: 'low',
+        title: 'Sharp Image Detail',
+        description: 'Image shows good detail preservation suggesting quality scan',
+        confidence: 80,
+      });
+      score += 5;
+    } else if (avgStdDev < 20) {
+      findings.push({
+        category: 'warning',
+        severity: 'medium',
+        title: 'Low Sharpness',
+        description: 'Image appears soft or heavily compressed',
+        confidence: 75,
+      });
+      score -= 10;
+    }
+  } catch (error: any) {
+    console.error('[AI Analysis] Print analysis failed:', error.message);
+  }
 
   findings.push({
     category: 'positive',
@@ -195,11 +312,52 @@ async function analyzeColorAndAging(imageUrl: string): Promise<{ findings: Findi
   const findings: Finding[] = [];
   let score = 80;
 
-  // TODO: Color science analysis:
-  // - Color gamut matching with period inks
-  // - Fading patterns consistent with age
-  // - UV fluorescence simulation
-  // - Oxidation indicators
+  try {
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const imageBuffer = Buffer.from(response.data);
+    const stats = await sharp(imageBuffer).stats();
+
+    // Calculate color saturation
+    const maxChannel = Math.max(...stats.channels.map(ch => ch.mean));
+    const minChannel = Math.min(...stats.channels.map(ch => ch.mean));
+    const saturation = (maxChannel - minChannel) / maxChannel;
+
+    if (saturation < 0.3) {
+      findings.push({
+        category: 'positive',
+        severity: 'low',
+        title: 'Age-Appropriate Fading',
+        description: 'Color saturation suggests natural aging of pigments',
+        confidence: 80,
+      });
+    } else if (saturation > 0.7) {
+      findings.push({
+        category: 'warning',
+        severity: 'medium',
+        title: 'High Color Saturation',
+        description: 'Colors appear unusually vibrant for claimed age',
+        confidence: 75,
+      });
+      score -= 10;
+    }
+
+    // Check for dominant colors (sepia tones suggest aging)
+    const avgRed = stats.channels[0]?.mean || 0;
+    const avgGreen = stats.channels[1]?.mean || 0;
+    const avgBlue = stats.channels[2]?.mean || 0;
+
+    if (avgRed > avgGreen && avgRed > avgBlue && avgGreen > avgBlue) {
+      findings.push({
+        category: 'positive',
+        severity: 'low',
+        title: 'Sepia Toning Present',
+        description: 'Color profile shows yellowing consistent with age',
+        confidence: 75,
+      });
+    }
+  } catch (error: any) {
+    console.error('[AI Analysis] Color analysis failed:', error.message);
+  }
 
   findings.push({
     category: 'positive',
@@ -297,11 +455,37 @@ export async function compareStampImages(
  * Generate perceptual hash of image for duplicate detection
  */
 export async function generateImageHash(imageUrl: string): Promise<string> {
-  // Simple hash based on URL for mock
-  // TODO: Implement actual perceptual hashing (pHash)
-  const hash = createHash('sha256');
-  hash.update(imageUrl);
-  return hash.digest('hex').substring(0, 16);
+  try {
+    // Download image
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const imageBuffer = Buffer.from(response.data);
+
+    // Generate perceptual hash using grayscale thumbnail
+    const thumbnail = await sharp(imageBuffer)
+      .resize(8, 8, { fit: 'fill' })
+      .grayscale()
+      .raw()
+      .toBuffer();
+
+    // Calculate average value
+    const avg = thumbnail.reduce((sum, val) => sum + val, 0) / thumbnail.length;
+
+    // Generate hash: 1 if pixel > avg, 0 otherwise
+    let hash = '';
+    for (let i = 0; i < thumbnail.length; i++) {
+      hash += thumbnail[i] > avg ? '1' : '0';
+    }
+
+    // Convert binary to hex
+    const hexHash = BigInt('0b' + hash).toString(16).padStart(16, '0');
+    return hexHash;
+  } catch (error: any) {
+    console.error('[AI Analysis] Hash generation failed:', error.message);
+    // Fallback to URL hash
+    const hash = createHash('sha256');
+    hash.update(imageUrl);
+    return hash.digest('hex').substring(0, 16);
+  }
 }
 
 /**

@@ -1,0 +1,77 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="240" fill="#0066CC" opacity="0.1"/>
+  
+  <!-- Outer Stamp Frame -->
+  <rect x="106" y="106" width="300" height="300" fill="none" stroke="#0066CC" stroke-width="8" rx="4"/>
+  
+  <!-- Stamp Perforations (top) -->
+  <g fill="#0066CC">
+    <circle cx="130" cy="106" r="6"/>
+    <circle cx="170" cy="106" r="6"/>
+    <circle cx="210" cy="106" r="6"/>
+    <circle cx="256" cy="106" r="6"/>
+    <circle cx="302" cy="106" r="6"/>
+    <circle cx="342" cy="106" r="6"/>
+    <circle cx="382" cy="106" r="6"/>
+  </g>
+  
+  <!-- Stamp Perforations (bottom) -->
+  <g fill="#0066CC">
+    <circle cx="130" cy="406" r="6"/>
+    <circle cx="170" cy="406" r="6"/>
+    <circle cx="210" cy="406" r="6"/>
+    <circle cx="256" cy="406" r="6"/>
+    <circle cx="302" cy="406" r="6"/>
+    <circle cx="342" cy="406" r="6"/>
+    <circle cx="382" cy="406" r="6"/>
+  </g>
+  
+  <!-- Stamp Perforations (left) -->
+  <g fill="#0066CC">
+    <circle cx="106" cy="130" r="6"/>
+    <circle cx="106" cy="170" r="6"/>
+    <circle cx="106" cy="210" r="6"/>
+    <circle cx="106" cy="256" r="6"/>
+    <circle cx="106" cy="302" r="6"/>
+    <circle cx="106" cy="342" r="6"/>
+    <circle cx="106" cy="382" r="6"/>
+  </g>
+  
+  <!-- Stamp Perforations (right) -->
+  <g fill="#0066CC">
+    <circle cx="406" cy="130" r="6"/>
+    <circle cx="406" cy="170" r="6"/>
+    <circle cx="406" cy="210" r="6"/>
+    <circle cx="406" cy="256" r="6"/>
+    <circle cx="406" cy="302" r="6"/>
+    <circle cx="406" cy="342" r="6"/>
+    <circle cx="406" cy="382" r="6"/>
+  </g>
+  
+  <!-- Inner Content Area -->
+  <rect x="130" y="130" width="252" height="252" fill="white" stroke="#0066CC" stroke-width="3"/>
+  
+  <!-- Blockchain Symbol (simplified chain) -->
+  <g fill="#DAA520" stroke="#DAA520" stroke-width="2">
+    <!-- Left Link -->
+    <circle cx="186" cy="256" r="28" fill="none" stroke-width="6"/>
+    <circle cx="186" cy="256" r="18" fill="#DAA520"/>
+    
+    <!-- Right Link -->
+    <circle cx="326" cy="256" r="28" fill="none" stroke-width="6"/>
+    <circle cx="326" cy="256" r="18" fill="#DAA520"/>
+    
+    <!-- Connecting Line -->
+    <line x1="214" y1="256" x2="298" y2="256" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Coin Symbol "₵" -->
+  <text x="256" y="310" font-family="serif" font-size="80" font-weight="bold" fill="#DC143C" text-anchor="middle">₵</text>
+  
+  <!-- "StampCoin" Text -->
+  <text x="256" y="370" font-family="serif" font-size="32" font-weight="bold" fill="#0066CC" text-anchor="middle">StampCoin</text>
+  
+  <!-- Small tagline -->
+  <text x="256" y="390" font-family="sans-serif" font-size="14" fill="#666" text-anchor="middle">NFT Marketplace</text>
+</svg>

@@ -7,6 +7,7 @@ import { Sparkles, Mail, MapPin, Phone } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -15,12 +16,20 @@ export default function Contact() {
     subject: "",
     message: ""
   });
+  
+  const contactMutation = trpc.contact.send.useMutation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement API call to save contact message
-    toast.success("Message sent successfully! We'll get back to you soon.");
-    setFormData({ name: "", email: "", subject: "", message: "" });
+    
+    try {
+      await contactMutation.mutateAsync(formData);
+      toast.success("Message sent successfully! We'll get back to you soon.");
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (error) {
+      toast.error("Failed to send message. Please try again.");
+      console.error("Contact form error:", error);
+    }
   };
 
   return (

@@ -14,6 +14,11 @@ import * as appraisal from './appraisal';
 import * as expertManagement from "./expert-management";
 import * as partnershipManagement from "./partnership-management";
 import { archiveRouter } from "./archive-router";
+import { downloadsRouter } from "./routers/downloads";
+import { stampAuthenticationRouter } from "./routers/stamp-authentication";
+import { tradingRouter } from "./routers/stamp-trading";
+import { shippingRouter } from "./routers/stamp-shipping";
+
 function createTestStripeMock() {
   return {
     checkout: {
@@ -44,6 +49,10 @@ const stripe = process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.st
 export const appRouter = router({
   system: systemRouter,
   archive: archiveRouter,
+  downloads: downloadsRouter,
+  stampAuthentication: stampAuthenticationRouter,
+  trading: tradingRouter,
+  shipping: shippingRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -113,7 +122,7 @@ export const appRouter = router({
         condition: z.string().optional(),
         certificateUrl: z.string().optional(),
         historicalSignificance: z.string().optional(),
-        marketTrend: z.string().optional(),
+        marketTrend: z.enum(['rising', 'stable', 'declining', 'volatile']).optional(),
         estimatedValue: z.string().optional(),
         lastSoldPrice: z.string().optional(),
         lastSoldDate: z.date().optional(),
@@ -498,7 +507,20 @@ export const appRouter = router({
         if (!stamp) {
           throw new Error('Stamp not found');
         }
-        return nftMinting.generateNftMetadata(stamp);
+        return nftMinting.generateNftMetadata({
+          title: stamp.title,
+          description: stamp.description || '',
+          imageUrl: stamp.imageUrl || undefined,
+          country: stamp.country || undefined,
+          year: stamp.year || undefined,
+          rarity: stamp.rarity || undefined,
+          designer: stamp.designer || undefined,
+          issuedBy: stamp.issuedBy || undefined,
+          denomination: stamp.denomination || undefined,
+          condition: stamp.condition || undefined,
+          certificateNumber: stamp.certificateNumber || undefined,
+          physicalStampId: stamp.physicalStampId || undefined,
+        });
       }),
   }),
 
@@ -627,7 +649,7 @@ export const appRouter = router({
         return await appraisal.analyzeMarketTrends({
           category: input.category,
           country: input.country,
-          yearRange: input.yearRange,
+          yearRange: input.yearRange as [number, number] | undefined,
         });
       }),
   }),

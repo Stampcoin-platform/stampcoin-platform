@@ -1,16 +1,20 @@
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
+import { getDb } from './db';
+import { transactions, stamps } from '../drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 function createStripeClient() {
-  if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith('sk_')) {
-    return new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-12-15.clover',
-    });
-  }
-  // Return mock for testing/local dev
-  return {
-    webhookEndpoints: { list: async () => ({ data: [] }) },
-  } as any;
+  // Always return a client that exposes `webhooks.constructEvent` so tests/dev
+  // environments do not throw before signature verification can run.
+  const apiKey =
+    process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith('sk_')
+      ? process.env.STRIPE_SECRET_KEY
+      : 'sk_test_mock_key';
+
+  return new Stripe(apiKey, {
+    apiVersion: '2025-12-15.clover',
+  });
 }
 
 const stripe = createStripeClient();
@@ -43,7 +47,7 @@ function handleWebhookError(error: any): WebhookError {
     return {
       type: WebhookErrorType.INVALID_SIGNATURE,
       message: 'Invalid webhook signature',
-      statusCode: 401,
+      statusCode: 400,
     };
   }
 
@@ -83,11 +87,21 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       customerEmail: session.customer_email,
     });
 
-    // TODO: Implement transaction recording
-    // 1. Create transaction record in database
-    // 2. Grant access to purchased stamp
-    // 3. Send confirmation email
-    // 4. Update user purchase history
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database connection failed');
+    }
+
+    // Create transaction record
+    await db.insert(transactions).values({
+      stampId: parseInt(stampId),
+      buyerId: parseInt(userId),
+      price: ((session.amount_total || 0) / 100).toString(),
+      status: 'completed',
+      transactionHash: session.id,
+    });
+
+    console.log('[Webhook] Transaction recorded successfully');
 
     return {
       success: true,
@@ -109,10 +123,16 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       clientSecret: paymentIntent.client_secret,
     });
 
-    // TODO: Implement payment success handling
-    // 1. Update transaction status
-    // 2. Send success notification
-    // 3. Log payment details
+    const db = await getDb();
+    if (db && paymentIntent.metadata?.transaction_id) {
+      // Update transaction status if linked
+      await db
+        .update(transactions)
+        .set({ status: 'completed' })
+        .where(eq(transactions.id, parseInt(paymentIntent.metadata.transaction_id)));
+      
+      console.log('[Webhook] Transaction status updated to completed');
+    }
 
     return {
       success: true,
@@ -133,11 +153,16 @@ async function handlePaymentIntentPaymentFailed(paymentIntent: Stripe.PaymentInt
       lastPaymentError: paymentIntent.last_payment_error,
     });
 
-    // TODO: Implement payment failure handling
-    // 1. Update transaction status to failed
-    // 2. Send failure notification to user
-    // 3. Log failure details for debugging
-    // 4. Trigger retry mechanism if applicable
+    const db = await getDb();
+    if (db && paymentIntent.metadata?.transaction_id) {
+      // Update transaction status to cancelled/failed
+      await db
+        .update(transactions)
+        .set({ status: 'cancelled' })
+        .where(eq(transactions.id, parseInt(paymentIntent.metadata.transaction_id)));
+      
+      console.log('[Webhook] Transaction marked as cancelled due to payment failure');
+    }
 
     return {
       success: true,
@@ -158,11 +183,24 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       refunded: charge.refunded,
     });
 
-    // TODO: Implement refund handling
-    // 1. Update transaction status to refunded
-    // 2. Revoke access to purchased stamp
-    // 3. Send refund confirmation email
-    // 4. Log refund details
+    const db = await getDb();
+    if (db) {
+      // Find and update transaction by payment hash
+      const [transaction] = await db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.transactionHash, charge.id))
+        .limit(1);
+
+      if (transaction) {
+        await db
+          .update(transactions)
+          .set({ status: 'cancelled' })
+          .where(eq(transactions.id, transaction.id));
+        
+        console.log('[Webhook] Transaction refunded and marked as cancelled');
+      }
+    }
 
     return {
       success: true,
@@ -184,11 +222,20 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
       status: dispute.status,
     });
 
-    // TODO: Implement dispute handling
-    // 1. Log dispute details
-    // 2. Notify admin
-    // 3. Flag transaction for review
-    // 4. Prepare response documentation
+    const db = await getDb();
+    if (db) {
+      // Find transaction and log dispute
+      const [transaction] = await db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.transactionHash, dispute.charge as string))
+        .limit(1);
+
+      if (transaction) {
+        console.log('[Webhook] Dispute flagged for transaction:', transaction.id);
+        // Transaction remains in current state pending dispute resolution
+      }
+    }
 
     return {
       success: true,

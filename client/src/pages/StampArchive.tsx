@@ -21,11 +21,9 @@ interface Stamp {
 
 interface StampFilter {
   country?: string;
-  rarity?: string;
+  rarity?: 'common' | 'uncommon' | 'rare' | 'very_rare' | 'legendary';
   minYear?: number;
   maxYear?: number;
-  minPrice?: number;
-  maxPrice?: number;
 }
 
 /**
@@ -40,6 +38,7 @@ export function StampArchive() {
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'detail'>('grid');
   const [selectedStamp, setSelectedStamp] = useState<Stamp | null>(null);
   const [stats, setStats] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // tRPC hooks
   const { data: archiveStats } = trpc.archive.getStats.useQuery();
@@ -48,14 +47,21 @@ export function StampArchive() {
     limit: 20,
     ...filters,
   });
-  const searchMutation = trpc.archive.searchStamps.useMutation();
+  const { data: searchResults } = trpc.archive.searchStamps.useQuery(
+    { query: searchTerm, filters },
+    { enabled: Boolean(searchTerm) },
+  );
   const mintMutation = trpc.archive.mintNFT.useMutation();
 
   useEffect(() => {
+    if (searchResults?.data && searchTerm) {
+      setStamps(searchResults.data);
+      return;
+    }
     if (stampsList?.data) {
       setStamps(stampsList.data);
     }
-  }, [stampsList]);
+  }, [stampsList, searchResults, searchTerm]);
 
   useEffect(() => {
     if (archiveStats?.data) {
@@ -66,18 +72,10 @@ export function StampArchive() {
   /**
    * Handle stamp search
    */
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setLoading(true);
-    try {
-      const result = await searchMutation.mutateAsync({ query, filters });
-      if (result.success) {
-        setStamps(result.data);
-      }
-    } catch (error) {
-      console.error('Search failed:', error);
-    } finally {
-      setLoading(false);
-    }
+    setSearchTerm(query);
+    setLoading(false);
   };
 
   /**
@@ -171,7 +169,9 @@ export function StampArchive() {
         <div className="filter-controls">
           <select
             value={filters.rarity || ''}
-            onChange={(e) => setFilters({ ...filters, rarity: e.target.value })}
+            onChange={(e) =>
+              setFilters({ ...filters, rarity: (e.target.value || undefined) as Stamp['rarity'] | undefined })
+            }
           >
             <option value="">All Rarities</option>
             <option value="common">Common</option>

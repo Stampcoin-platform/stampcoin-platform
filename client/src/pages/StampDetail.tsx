@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export default function StampDetail() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const stampId = params.id ? parseInt(params.id) : 0;
 
   const { user } = useAuth();

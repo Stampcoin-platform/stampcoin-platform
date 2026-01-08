@@ -6,7 +6,7 @@ import { ENV } from './_core/env';
 let _db: ReturnType<typeof drizzle> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
-export async function getDb() {
+export function getDb(): any {
   if (!_db && process.env.DATABASE_URL) {
     try {
       _db = drizzle(process.env.DATABASE_URL);
@@ -15,8 +15,14 @@ export async function getDb() {
       _db = null;
     }
   }
-  return _db;
+  if (!_db) {
+    throw new Error("[Database] DATABASE_URL is not configured or connection failed.");
+  }
+  return _db as any;
 }
+
+// Cast to any to keep router code simple while we migrate Drizzle typings.
+export const db: any = getDb();
 
 // ============ User Operations ============
 

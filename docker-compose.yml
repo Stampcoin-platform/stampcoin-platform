@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: stampcoin-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Fallbacks for local Docker runs; override in .env for production
+      NODE_ENV: production
+      PORT: ${PORT:-3000}
+      DATABASE_URL: ${DATABASE_URL:-mysql://stampcoin:stampcoin123@mysql:3306/stampcoin}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      VITE_ANALYTICS_ENDPOINT: ${VITE_ANALYTICS_ENDPOINT:-}
+      VITE_ANALYTICS_WEBSITE_ID: ${VITE_ANALYTICS_WEBSITE_ID:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - stampcoin-network
+
+networks:
+  stampcoin-network:
+    name: stampcoin-network
+    external: false

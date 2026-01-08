@@ -22,6 +22,9 @@ export default function Home() {
               <Link href="/marketplace" className="text-foreground/80 hover:text-primary transition-colors">
                 Marketplace
               </Link>
+              <Link href="/collections" className="text-foreground/80 hover:text-primary transition-colors">
+                Collections
+              </Link>
               <Link href="/gallery" className="text-foreground/80 hover:text-primary transition-colors">
                 Gallery
               </Link>

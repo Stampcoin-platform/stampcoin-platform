@@ -67,8 +67,13 @@ export default function Marketplace() {
 
   const { data: categories } = trpc.categories.list.useQuery();
 
+  const normalizedStamps = stamps?.map((s) => ({
+    ...s,
+    country: s.country ?? '',
+  })) as Stamp[] | undefined;
+
   const { display: displayStamps, isEmpty } = getDisplayStamps({
-    stamps,
+    stamps: normalizedStamps,
     featured: featuredStamps,
     isLoading,
   });
@@ -138,12 +143,12 @@ export default function Marketplace() {
             </div>
             <div className="w-full md:w-48">
               <label className="text-sm font-medium mb-2 block">Category</label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select value={selectedCategory || "all"} onValueChange={(val) => setSelectedCategory(val === "all" ? "" : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {categories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.name}
@@ -154,12 +159,12 @@ export default function Marketplace() {
             </div>
             <div className="w-full md:w-48">
               <label className="text-sm font-medium mb-2 block">Rarity</label>
-              <Select value={selectedRarity} onValueChange={setSelectedRarity}>
+              <Select value={selectedRarity || "all"} onValueChange={(val) => setSelectedRarity(val === "all" ? "" : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Rarities" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Rarities</SelectItem>
+                  <SelectItem value="all">All Rarities</SelectItem>
                   <SelectItem value="common">Common</SelectItem>
                   <SelectItem value="uncommon">Uncommon</SelectItem>
                   <SelectItem value="rare">Rare</SelectItem>

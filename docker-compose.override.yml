@@ -1,0 +1,198 @@
+version: '3.8'
+
+services:
+  # MySQL Database (Production-like)
+  mysql:
+    image: mysql:8.0
+    container_name: stampcoin-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-stampcoin}
+      MYSQL_USER: ${MYSQL_USER:-stampcoin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-stampcoin123}
+      MYSQL_INITDB_SKIP_TZINFO: "yes"
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      # Data persistence
+      - mysql_data:/var/lib/mysql
+      # Custom configurations (optional)
+      - ./mysql.cnf:/etc/mysql/my.cnf:ro
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_connections=1000
+      --max_allowed_packet=256M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - stampcoin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache/Session Store
+  redis:
+    image: redis:7-alpine
+    container_name: stampcoin-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - stampcoin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # MongoDB (Optional - for future use)
+  # mongo:
+  #   image: mongo:6
+  #   container_name: stampcoin-mongo
+  #   restart: unless-stopped
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+  #     MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongo123}
+  #     MONGO_INITDB_DATABASE: ${MONGO_DB:-stampcoin}
+  #   ports:
+  #     - "${MONGO_PORT:-27017}:27017"
+  #   volumes:
+  #     - mongo_data:/data/db
+  #   networks:
+  #     - stampcoin-network
+  #   healthcheck:
+  #     test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # PostgreSQL (Alternative to MySQL)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: stampcoin-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: ${POSTGRES_DB:-stampcoin}
+  #     POSTGRES_USER: ${POSTGRES_USER:-stampcoin}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+  #   ports:
+  #     - "${POSTGRES_PORT:-5432}:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - stampcoin-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stampcoin}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Adminer (Database GUI)
+  adminer:
+    image: adminer:latest
+    container_name: stampcoin-adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    depends_on:
+      - mysql
+    networks:
+      - stampcoin-network
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Redis Commander (Redis GUI)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: stampcoin-redis-commander
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=default:stampcoin-redis:6379:0:${REDIS_PASSWORD:-redis123}
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8081}:8081"
+    depends_on:
+      - redis
+    networks:
+      - stampcoin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Mail Testing (Optional - MailHog)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: stampcoin-mailhog
+    restart: unless-stopped
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"      # SMTP Server
+      - "${MAILHOG_UI_PORT:-8025}:8025"        # Web UI
+    networks:
+      - stampcoin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # MinIO (S3 Compatible Storage - Optional)
+  # minio:
+  #   image: minio/minio:latest
+  #   container_name: stampcoin-minio
+  #   restart: unless-stopped
+  #   environment:
+  #     MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+  #     MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+  #   ports:
+  #     - "${MINIO_API_PORT:-9000}:9000"
+  #     - "${MINIO_CONSOLE_PORT:-9001}:9001"
+  #   volumes:
+  #     - minio_data:/minio_data
+  #   command: server /minio_data --console-address ":9001"
+  #   networks:
+  #     - stampcoin-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+  #     interval: 30s
+  #     timeout: 20s
+  #     retries: 3
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  # mongo_data:
+  #   driver: local
+  # postgres_data:
+  #   driver: local
+  # minio_data:
+  #   driver: local
+
+networks:
+  stampcoin-network:
+    driver: bridge

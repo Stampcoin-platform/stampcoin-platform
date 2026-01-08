@@ -8,13 +8,13 @@ interface CurrencyData {
   currencySymbol: string;
   totalSupply: number;
   circulatingSupply: number;
-  maxSupply: number;
-  burnedSupply: number;
-  priceUSD: number;
-  marketCap: number;
-  volumeUSD: number;
-  totalStampsInArchive: number;
-  totalNFTsMinted: number;
+  maxSupply: number | null;
+  burnedSupply: number | null;
+  priceUSD: number | string | null;
+  marketCap: number | string | null;
+  volumeUSD: number | string | null;
+  totalStampsInArchive: number | null;
+  totalNFTsMinted: number | null;
 }
 
 interface UserAssets {
@@ -44,7 +44,21 @@ export function StampCoinEconomy() {
 
   useEffect(() => {
     if (currencyStats?.data) {
-      setCurrency(currencyStats.data);
+      const c = currencyStats.data as any;
+      const normalized: CurrencyData = {
+        currencyName: c.currencyName,
+        currencySymbol: c.currencySymbol,
+        totalSupply: Number(c.totalSupply ?? 0),
+        circulatingSupply: Number(c.circulatingSupply ?? 0),
+        maxSupply: c.maxSupply ?? null,
+        burnedSupply: c.burnedSupply ?? null,
+        priceUSD: c.priceUSD ?? 0,
+        marketCap: c.marketCap ?? null,
+        volumeUSD: c.volumeUSD ?? null,
+        totalStampsInArchive: c.totalStampsInArchive ?? null,
+        totalNFTsMinted: c.totalNFTsMinted ?? null,
+      };
+      setCurrency(normalized);
     }
   }, [currencyStats]);
 
@@ -65,6 +79,7 @@ export function StampCoinEconomy() {
    */
   const getSupplyPercentage = () => {
     if (!currency) return 0;
+    if (!currency.maxSupply) return 0;
     return (currency.circulatingSupply / currency.maxSupply) * 100;
   };
 
@@ -95,7 +110,7 @@ export function StampCoinEconomy() {
             <div className="card-content">
               <div className="price-display">
                 <span className="currency-symbol">STMP</span>
-                <span className="price-value">${currency.priceUSD.toFixed(4)}</span>
+                <span className="price-value">${Number(currency.priceUSD ?? 0).toFixed(4)}</span>
               </div>
               <p className="price-note">1 STMP = $0.10 USD (Pegged)</p>
             </div>
@@ -107,7 +122,7 @@ export function StampCoinEconomy() {
               <h3>📈 Market Cap</h3>
             </div>
             <div className="card-content">
-              <div className="metric-value">${formatCurrency(currency.marketCap || 0)}</div>
+              <div className="metric-value">${formatCurrency(Number(currency.marketCap ?? 0))}</div>
               <p className="metric-label">Total Market Value</p>
             </div>
           </div>
@@ -140,7 +155,7 @@ export function StampCoinEconomy() {
               <h3>📊 24h Volume</h3>
             </div>
             <div className="card-content">
-              <div className="metric-value">${formatCurrency(currency.volumeUSD || 0)}</div>
+              <div className="metric-value">${formatCurrency(Number(currency.volumeUSD ?? 0))}</div>
               <p className="metric-label">Trading Volume</p>
             </div>
           </div>
@@ -151,7 +166,7 @@ export function StampCoinEconomy() {
               <h3>🔗 NFTs Minted</h3>
             </div>
             <div className="card-content">
-              <div className="metric-value">{formatNumber(currency.totalNFTsMinted)}</div>
+              <div className="metric-value">{formatNumber(Number(currency.totalNFTsMinted ?? 0))}</div>
               <p className="metric-label">Total NFTs Created</p>
             </div>
           </div>
@@ -178,7 +193,7 @@ export function StampCoinEconomy() {
               </div>
               <div className="supply-info">
                 <span>{formatNumber(currency.circulatingSupply)}</span>
-                <span>/ {formatNumber(currency.maxSupply)}</span>
+                <span>/ {formatNumber(Number(currency.maxSupply ?? 0))}</span>
               </div>
             </div>
 
@@ -189,12 +204,12 @@ export function StampCoinEconomy() {
               </div>
               <div className="breakdown-item">
                 <div className="breakdown-label">Burned</div>
-                <div className="breakdown-value">{formatNumber(currency.burnedSupply)}</div>
+                  <div className="breakdown-value">{formatNumber(Number(currency.burnedSupply ?? 0))}</div>
               </div>
               <div className="breakdown-item">
                 <div className="breakdown-label">Reserve</div>
                 <div className="breakdown-value">
-                  {formatNumber(currency.maxSupply - currency.circulatingSupply)}
+                  {formatNumber(Number(currency.maxSupply ?? 0) - currency.circulatingSupply)}
                 </div>
               </div>
             </div>

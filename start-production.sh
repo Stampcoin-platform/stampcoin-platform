@@ -10,14 +10,15 @@ if [ -z "$DATABASE_URL" ]; then
     exit 1
 fi
 
-if [ -z "$STRIPE_SECRET_KEY" ]; then
-    echo "Error: STRIPE_SECRET_KEY is not set"
+if [ -z "$JWT_SECRET" ]; then
+    echo "Error: JWT_SECRET is not set"
     exit 1
 fi
 
-if [ -z "$SESSION_SECRET" ]; then
-    echo "Error: SESSION_SECRET is not set"
-    exit 1
+if [ -z "$STRIPE_SECRET_KEY" ]; then
+    echo "Warning: STRIPE_SECRET_KEY is not set; Stripe will run in mock mode"
+else
+    echo "Stripe secret detected ✓"
 fi
 
 echo "Environment variables validated ✓"

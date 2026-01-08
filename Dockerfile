@@ -4,17 +4,21 @@ FROM node:22-alpine
 # Set working directory
 WORKDIR /app
 
-# Install npm globally first
-RUN npm install -g npm
+# Install pnpm globally
+RUN npm install -g pnpm@10.4.1
 
-# Copy all files first (including patches directory)
+# Copy package files and patches first
+COPY package.json pnpm-lock.yaml* ./
+COPY patches ./patches
+
+# Copy all project files (needed for patches to work correctly)
 COPY . .
 
-# Install dependencies (now patches are available)
-RUN npm install --legacy-peer-deps
+# Install dependencies
+RUN pnpm install --no-frozen-lockfile
 
 # Build frontend and backend
-RUN npm run build:frontend && npm run build
+RUN pnpm build:frontend && pnpm build
 
 # Expose port
 EXPOSE 3000

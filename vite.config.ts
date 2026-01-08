@@ -29,6 +29,10 @@ export default defineConfig({
         manualChunks: {
           react: ["react", "react-dom"],
           trpc: ["@trpc/client", "@trpc/react-query", "@tanstack/react-query"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-popover", "@radix-ui/react-select"],
+          charts: ["recharts"],
+          forms: ["react-hook-form", "@hookform/resolvers", "zod"],
+          router: ["wouter"],
         },
       },
     },

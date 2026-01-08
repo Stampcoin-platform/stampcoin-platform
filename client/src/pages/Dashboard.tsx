@@ -60,9 +60,22 @@ export default function Dashboard() {
               <Link href="/marketplace" className="text-foreground/80 hover:text-primary transition-colors">
                 Marketplace
               </Link>
+              <Link href="/collections" className="text-foreground/80 hover:text-primary transition-colors">
+                Collections
+              </Link>
               <Link href="/gallery" className="text-foreground/80 hover:text-primary transition-colors">
                 Gallery
               </Link>
+              {user?.role === 'admin' && (
+                <>
+                  <Link href="/admin/dashboard" className="text-foreground/80 hover:text-primary transition-colors">
+                    Admin Dashboard
+                  </Link>
+                  <Link href="/admin/nft-pipeline" className="text-foreground/80 hover:text-primary transition-colors">
+                    NFT Pipeline
+                  </Link>
+                </>
+              )}
               <Link href="/investors" className="text-foreground/80 hover:text-primary transition-colors">
                 For Investors
               </Link>

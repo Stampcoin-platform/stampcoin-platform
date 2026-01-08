@@ -5,7 +5,6 @@
  * Usage: npm run init:archive
  */
 
-import { db } from '../db';
 import * as archiveService from '../stamp-archive';
 import * as archiveDownloader from '../archive-downloader';
 

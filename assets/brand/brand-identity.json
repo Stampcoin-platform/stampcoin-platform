@@ -1,0 +1,116 @@
+{
+  "brand": {
+    "name": "StampCoin",
+    "tagline": "Revolutionizing Stamp Collecting with Blockchain Technology",
+    "industry": "NFT Marketplace / Blockchain / Philately",
+    "founded": 2025
+  },
+  "colors": {
+    "primary": {
+      "brandBlue": {
+        "hex": "#0066CC",
+        "rgb": "rgb(0, 102, 204)",
+        "usage": "Primary CTAs, headers, branding"
+      },
+      "stampRed": {
+        "hex": "#DC143C",
+        "rgb": "rgb(220, 20, 60)",
+        "usage": "Accents, highlights, important info"
+      },
+      "heritageGold": {
+        "hex": "#DAA520",
+        "rgb": "rgb(218, 165, 32)",
+        "usage": "Premium features, rare stamps"
+      }
+    },
+    "secondary": {
+      "deepNavy": {
+        "hex": "#1a2332",
+        "rgb": "rgb(26, 35, 50)",
+        "usage": "Text, backgrounds"
+      },
+      "softGray": {
+        "hex": "#F5F5F5",
+        "rgb": "rgb(245, 245, 245)",
+        "usage": "Backgrounds, cards"
+      },
+      "successGreen": {
+        "hex": "#28A745",
+        "rgb": "rgb(40, 167, 69)",
+        "usage": "Success messages, verified badges"
+      },
+      "warningAmber": {
+        "hex": "#FFC107",
+        "rgb": "rgb(255, 193, 7)",
+        "usage": "Alerts, warnings"
+      }
+    }
+  },
+  "typography": {
+    "headings": {
+      "fontFamily": "Playfair Display, serif",
+      "style": "Classic, elegant",
+      "usage": "All headings (H1-H6)"
+    },
+    "body": {
+      "fontFamily": "Inter, sans-serif",
+      "style": "Modern, readable",
+      "usage": "Body text, paragraphs"
+    },
+    "code": {
+      "fontFamily": "Fira Code, monospace",
+      "style": "Technical",
+      "usage": "Code snippets, technical content"
+    }
+  },
+  "logo": {
+    "files": {
+      "svg": "assets/logo/logo.svg",
+      "png512": "assets/logo/logo-512.png",
+      "png400": "assets/logo/logo-400.png",
+      "png256": "assets/logo/logo-256.png",
+      "white": "assets/logo/logo-white.png",
+      "black": "assets/logo/logo-black.png",
+      "favicon": "assets/logo/favicon.ico"
+    },
+    "usage": {
+      "discord": "512x512px",
+      "twitter": "400x400px",
+      "instagram": "320x320px",
+      "general": "256x256px",
+      "favicon": "32x32px"
+    }
+  },
+  "contact": {
+    "email": {
+      "main": "contact@stampcoin.com",
+      "support": "support@stampcoin.com",
+      "partnerships": "partnerships@stampcoin.com",
+      "press": "press@stampcoin.com",
+      "security": "security@stampcoin.com"
+    },
+    "social": {
+      "twitter": "@StampCoinNFT",
+      "instagram": "@stampcoin.nft",
+      "linkedin": "/company/stampcoin",
+      "discord": "StampCoin Community",
+      "telegram": "@StampCoinOfficial"
+    }
+  },
+  "assets": {
+    "stamps": {
+      "location": "assets/stamps/",
+      "categories": ["rare", "vintage", "modern", "errors"],
+      "count": "50+",
+      "source": "Wikimedia Commons"
+    },
+    "images": {
+      "minWidth": "1200px",
+      "format": "JPG or PNG",
+      "quality": "80%+",
+      "maxSize": "5MB"
+    }
+  },
+  "version": "1.0",
+  "lastUpdated": "2026-01-08"
+}

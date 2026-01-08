@@ -132,10 +132,10 @@ export async function createStampArchiveEntry(
   const db = await getDb();
   if (!db) throw new Error('Database not available');
 
-  const result = await db.insert(stampArchive).values({
+  await db.insert(stampArchive).values({
     archiveId: metadata.archiveId,
     country: metadata.country,
-    denomination: metadata.denomination,
+    denomination: metadata.denomination.toString(),
     year: metadata.year,
     catalog: metadata.catalog,
     condition: metadata.condition,
@@ -144,12 +144,17 @@ export async function createStampArchiveEntry(
     imageHash,
     imageUrl: processedImageUrl,
     originalImageUrl: metadata.imageUrl,
-    usdValue: pricing.final_value,
+    usdValue: pricing.final_value.toString(),
     stampCoinValue: pricing.currency,
-    createdAt: new Date(),
-  }).returning();
+  });
 
-  return result[0];
+  const [result] = await db
+    .select()
+    .from(stampArchive)
+    .where(eq(stampArchive.archiveId, metadata.archiveId))
+    .limit(1);
+
+  return result;
 }
 
 /**
@@ -264,9 +269,11 @@ export async function createNFTFromStamp(
   const db = await getDb();
   if (!db) throw new Error('Database not available');
 
-  const stamp = await db.query.stampArchive.findFirst({
-    where: eq(stampArchive.id, stampArchiveId),
-  });
+  const [stamp] = await db
+    .select()
+    .from(stampArchive)
+    .where(eq(stampArchive.archiveId, stampArchiveId))
+    .limit(1);
 
   if (!stamp) {
     throw new Error('Stamp not found');

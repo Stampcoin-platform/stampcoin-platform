@@ -7,6 +7,8 @@ import { router, publicProcedure, protectedProcedure } from './_core/trpc';
 import { z } from 'zod';
 import * as archiveService from './stamp-archive';
 import * as archiveDownloader from './archive-downloader';
+import * as nftPipeline from './nft-pipeline';
+import * as seedData from './seed-stamp-data';
 import { getDb } from './db';
 import {
   stampArchive,
@@ -15,8 +17,7 @@ import {
   platformCurrency,
   currencyDistribution,
 } from '../drizzle/schema';
-import { eq, sql } from 'drizzle-orm';
-import Decimal from 'decimal.js';
+import { eq, sql, and } from 'drizzle-orm';
 
 /**
  * Archive stamp router - manages digital stamp collection
@@ -57,40 +58,61 @@ export const archiveRouter = router({
     )
     .query(async (opts) => {
       const { page, limit, rarity, country, minYear, maxYear } = opts.input;
-      const offset = (page - 1) * limit;
+      const safeLimit = Math.min(Math.max(limit, 1), 100);
+      const safePage = Math.max(page, 1);
+      const offset = (safePage - 1) * safeLimit;
+      const countryTerm = country?.trim() || undefined;
+      
+      // Validate and swap year range if needed
+      let minYearValue = minYear && minYear > 0 ? minYear : undefined;
+      let maxYearValue = maxYear && maxYear > 0 ? maxYear : undefined;
+      
+      if (minYearValue && maxYearValue && minYearValue > maxYearValue) {
+        [minYearValue, maxYearValue] = [maxYearValue, minYearValue];
+      }
 
       try {
-        let query = db.select().from(stampArchive);
+        const db = await getDb();
+        if (!db) {
+          throw new Error('Database connection failed');
+        }
+        const conditions: any[] = [];
 
-        // Apply filters
         if (rarity) {
-          query = query.where(eq(stampArchive.rarity, rarity));
+          conditions.push(eq(stampArchive.rarity, rarity));
         }
-        if (country) {
-          query = query.where(sql`country LIKE ${`%${country}%`}`);
+        if (countryTerm) {
+          conditions.push(sql`country LIKE ${`%${countryTerm}%`}`);
         }
-        if (minYear) {
-          query = query.where(sql`year >= ${minYear}`);
+        if (minYearValue) {
+          conditions.push(sql`year >= ${minYearValue}`);
         }
-        if (maxYear) {
-          query = query.where(sql`year <= ${maxYear}`);
+        if (maxYearValue) {
+          conditions.push(sql`year <= ${maxYearValue}`);
         }
 
-        const stamps = await query.limit(limit).offset(offset);
+        let query: any = db.select().from(stampArchive);
+        if (conditions.length > 0) {
+          query = query.where(and(...conditions));
+        }
 
-        const countResult = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(stampArchive);
+        const stamps = await query.limit(safeLimit).offset(offset);
+
+        let countQuery: any = db.select({ count: sql<number>`count(*)` }).from(stampArchive);
+        if (conditions.length > 0) {
+          countQuery = countQuery.where(and(...conditions));
+        }
+        const countResult = await countQuery;
         const total = countResult[0]?.count || 0;
 
         return {
           success: true,
           data: stamps,
           pagination: {
-            page,
-            limit,
+            page: safePage,
+            limit: safeLimit,
             total,
-            pages: Math.ceil(total / limit),
+            pages: Math.ceil(total / safeLimit),
           },
         };
       } catch (error) {
@@ -111,13 +133,15 @@ export const archiveRouter = router({
       const id = typeof opts.input.id === 'string' ? opts.input.id : String(opts.input.id);
 
       try {
-        const stamp = await db.query.stampArchive.findFirst({
-          where: eq(stampArchive.archiveId, id),
-          with: {
-            pricing: true,
-            nft: true,
-          },
-        });
+        const db = await getDb();
+        if (!db) {
+          throw new Error('Database connection failed');
+        }
+        const [stamp] = await db
+          .select()
+          .from(stampArchive)
+          .where(eq(stampArchive.archiveId, id))
+          .limit(1);
 
         if (!stamp) {
           return {
@@ -126,9 +150,23 @@ export const archiveRouter = router({
           };
         }
 
+        const pricing = await db
+          .select()
+          .from(stampPricing)
+          .where(eq(stampPricing.archiveId, id));
+
+        const nfts = await db
+          .select()
+          .from(stampNFT)
+          .where(eq(stampNFT.archiveId, id));
+
         return {
           success: true,
-          data: stamp,
+          data: {
+            ...stamp,
+            pricing,
+            nft: nfts,
+          },
         };
       } catch (error) {
         console.error('Error getting stamp:', error);
@@ -155,7 +193,12 @@ export const archiveRouter = router({
 
       try {
         const samples = archiveDownloader.getSampleStamps(opts.input.count);
-        const results = await archiveService.batchImportStamps(samples);
+        const stampsWithArchiveId = samples.map((stamp, index) => ({
+          ...stamp,
+          archiveId: `stamp-${Date.now()}-${index}`,
+          denomination: typeof stamp.denomination === 'string' ? parseFloat(stamp.denomination) : stamp.denomination,
+        }));
+        const results = await archiveService.batchImportStamps(stampsWithArchiveId);
 
         const successCount = results.filter((r) => r.success).length;
         const failureCount = results.filter((r) => !r.success).length;
@@ -225,13 +268,17 @@ export const archiveRouter = router({
     )
     .mutation(async (opts) => {
       try {
+        const db = await getDb();
+        if (!db) {
+          throw new Error('Database connection failed');
+        }
         const nftData = await archiveService.createNFTFromStamp(
           opts.input.stampArchiveId,
           opts.input.walletAddress || opts.ctx.user!.openId,
         );
 
         // Store NFT in database
-        const nft = await db.insert(stampNFT).values({
+        const nftResult = await db.insert(stampNFT).values({
           archiveId: opts.input.stampArchiveId,
           serialNumber: nftData.serialNumber,
           nftTokenId: '0', // Will be updated after actual minting
@@ -244,11 +291,15 @@ export const archiveRouter = router({
           nftType: 'collectible',
         });
 
-        // Distribute StampCoins
+        const nftId = (nftResult as any)?.insertId;
+        const [insertedNft] = nftId
+          ? await db.select().from(stampNFT).where(eq(stampNFT.id, nftId)).limit(1)
+          : [];
+
         await db.insert(currencyDistribution).values({
           userId: opts.ctx.user!.id,
           archiveId: opts.input.stampArchiveId,
-          nftId: nft[0].id,
+          nftId: nftId ?? null,
           distributionType: 'mint',
           amount: nftData.stampCoinValue,
           status: 'completed',
@@ -257,7 +308,7 @@ export const archiveRouter = router({
         return {
           success: true,
           data: {
-            nft: nft[0],
+            nft: insertedNft ?? null,
             stampCoins: nftData.stampCoinValue,
             serialNumber: nftData.serialNumber,
           },
@@ -273,7 +324,11 @@ export const archiveRouter = router({
    */
   getCurrencyStats: publicProcedure.query(async () => {
     try {
-      const currency = await db.query.platformCurrency.findFirst();
+      const db = await getDb();
+      if (!db) {
+        throw new Error('Database connection failed');
+      }
+      const [currency] = await db.select().from(platformCurrency).limit(1);
 
       if (!currency) {
         // Create initial currency record
@@ -284,12 +339,21 @@ export const archiveRouter = router({
           circulatingSupply: 0,
           maxSupply: 1000000,
           burnedSupply: 0,
-          priceUSD: new Decimal('0.1000'),
+          priceUSD: '0.1000',
         });
 
         return {
           success: true,
-          data: initial[0],
+          data: {
+            id: (initial as any)?.insertId ?? 0,
+            currencyName: 'StampCoin',
+            currencySymbol: 'STMP',
+            totalSupply: 0,
+            circulatingSupply: 0,
+            maxSupply: 1000000,
+            burnedSupply: 0,
+            priceUSD: '0.1000',
+          },
         };
       }
 
@@ -311,6 +375,10 @@ export const archiveRouter = router({
    */
   getCurrencyDistribution: publicProcedure.query(async () => {
     try {
+      const db = await getDb();
+      if (!db) {
+        throw new Error('Database connection failed');
+      }
       const distribution = await db
         .select({
           type: currencyDistribution.distributionType,
@@ -350,9 +418,11 @@ export const archiveRouter = router({
    */
   getUserAssets: protectedProcedure.query(async (opts) => {
     try {
-      const nfts = await db.query.stampNFT.findMany({
-        where: eq(stampNFT.ownerId, opts.ctx.user!.id),
-      });
+      const db = await getDb();
+      if (!db) {
+        throw new Error('Database connection failed');
+      }
+      const nfts = await db.select().from(stampNFT).where(eq(stampNFT.ownerId, opts.ctx.user!.id));
 
       const coinBalance = await db
         .select({ total: sql<number>`coalesce(sum(amount), 0)` })
@@ -393,11 +463,15 @@ export const archiveRouter = router({
     )
     .query(async (opts) => {
       try {
+        const db = await getDb();
+        if (!db) {
+          throw new Error('Database connection failed');
+        }
         // This would typically use full-text search
         // For now, simple filter-based search
         const { query, filters } = opts.input;
 
-        let dbQuery = db.select().from(stampArchive);
+        let dbQuery: any = db.select().from(stampArchive);
 
         if (query) {
           dbQuery = dbQuery.where(
@@ -446,4 +520,242 @@ export const archiveRouter = router({
         };
       }
     }),
+
+  /**
+   * Run NFT generation pipeline from UPU
+   */
+  runNFTPipeline: protectedProcedure
+    .input(
+      z.object({
+        countries: z.array(z.string()).default(['USA', 'GBR', 'FRA']),
+        years: z.array(z.number()).optional(),
+        enrichWithCatalogs: z.boolean().default(true),
+        autoMint: z.boolean().default(false),
+        blockchain: z.enum(['ethereum', 'polygon']).default('polygon'),
+      }),
+    )
+    .mutation(async (opts) => {
+      if (opts.ctx.user?.role !== 'admin') {
+        throw new Error('Only admins can run the NFT pipeline');
+      }
+
+      try {
+        const config: nftPipeline.PipelineConfig = {
+          sources: {
+            upu: {
+              countries: opts.input.countries,
+              years: opts.input.years || [new Date().getFullYear()],
+            },
+          },
+          processing: {
+            enrichWithCatalogs: opts.input.enrichWithCatalogs,
+            performAIAnalysis: false,
+            checkDuplicates: true,
+            downloadImages: true,
+            uploadToS3: true,
+          },
+          nft: {
+            autoMint: opts.input.autoMint,
+            blockchain: opts.input.blockchain,
+            batchSize: 10,
+          },
+          organization: {
+            categories: ['country', 'year'],
+            autoTag: true,
+          },
+        };
+
+        const result = await nftPipeline.runNFTGenerationPipeline(config);
+
+        return {
+          success: true,
+          data: result,
+        };
+      } catch (error) {
+        console.error('Error running NFT pipeline:', error);
+        throw error;
+      }
+    }),
+
+  /**
+   * Quick start pipeline
+   */
+  quickStartPipeline: protectedProcedure.mutation(async (opts) => {
+    if (opts.ctx.user?.role !== 'admin') {
+      throw new Error('Only admins can run the pipeline');
+    }
+
+    try {
+      const result = await nftPipeline.quickStartPipeline();
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error) {
+      console.error('Error running quick start:', error);
+      throw error;
+    }
+  }),
+
+  /**
+   * Get stamps organized by category
+   */
+  getStampsByCategory: publicProcedure
+    .input(
+      z.object({
+        category: z.enum(['country', 'year', 'rarity', 'theme']),
+        value: z.string().optional(),
+      }),
+    )
+    .query(async (opts) => {
+      try {
+        const db = await getDb();
+        if (!db) {
+          throw new Error('Database connection failed');
+        }
+
+        let query: any = db.select().from(stampArchive);
+
+        if (opts.input.category === 'country' && opts.input.value) {
+          query = query.where(eq(stampArchive.country, opts.input.value));
+        } else if (opts.input.category === 'year' && opts.input.value) {
+          query = query.where(eq(stampArchive.year, parseInt(opts.input.value)));
+        } else if (opts.input.category === 'rarity' && opts.input.value) {
+          query = query.where(eq(stampArchive.rarity, opts.input.value as any));
+        }
+
+        const results = await query.limit(100);
+
+        return {
+          success: true,
+          data: results,
+        };
+      } catch (error) {
+        console.error('Error getting stamps by category:', error);
+        return {
+          success: false,
+          error: 'Failed to fetch stamps',
+        };
+      }
+    }),
+
+  /**
+   * Get available categories with counts
+   */
+  getCategories: publicProcedure.query(async () => {
+    try {
+      const db = await getDb();
+      if (!db) {
+        throw new Error('Database connection failed');
+      }
+
+      const [countries, years, rarities] = await Promise.all([
+        db
+          .select({
+            category: stampArchive.country,
+            count: sql<number>`count(*)`,
+          })
+          .from(stampArchive)
+          .groupBy(stampArchive.country),
+        db
+          .select({
+            category: stampArchive.year,
+            count: sql<number>`count(*)`,
+          })
+          .from(stampArchive)
+          .groupBy(stampArchive.year),
+        db
+          .select({
+            category: stampArchive.rarity,
+            count: sql<number>`count(*)`,
+          })
+          .from(stampArchive)
+          .groupBy(stampArchive.rarity),
+      ]);
+
+      return {
+        success: true,
+        data: {
+          countries,
+          years,
+          rarities,
+        },
+      };
+    } catch (error) {
+      console.error('Error getting categories:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch categories',
+      };
+    }
+  }),
+
+  /**
+   * Admin: Populate database with seed stamp data
+   */
+  seedDatabase: protectedProcedure.mutation(async (opts) => {
+    if (opts.ctx.user?.role !== 'admin') {
+      throw new Error('Only admins can seed the database');
+    }
+
+    try {
+      console.log('Starting database seeding...');
+      const result = await seedData.seedStampDatabase();
+      
+      return {
+        success: true,
+        data: result,
+        message: `Successfully imported ${result.success} stamps into database`,
+      };
+    } catch (error) {
+      console.error('Error seeding database:', error);
+      throw error;
+    }
+  }),
+
+  /**
+   * Get database population status
+   */
+  getDatabaseStatus: publicProcedure.query(async () => {
+    try {
+      const db = await getDb();
+      if (!db) {
+        throw new Error('Database connection failed');
+      }
+
+      const [stampCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(stampArchive);
+
+      const [priceCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(stampPricing);
+
+      const [nftCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(stampNFT);
+
+      const [currency] = await db
+        .select()
+        .from(platformCurrency)
+        .limit(1);
+
+      return {
+        success: true,
+        data: {
+          stampsInArchive: stampCount?.count || 0,
+          priceRecords: priceCount?.count || 0,
+          nftsMinted: nftCount?.count || 0,
+          currency: currency || null,
+          populated: (stampCount?.count || 0) > 0,
+        },
+      };
+    } catch (error) {
+      console.error('Error getting database status:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch database status',
+      };
+    }
+  }),
 });
