@@ -1,3 +1,13 @@
+/**
+ * @fileoverview StampCoin Platform - Main Server Entry Point
+ * @copyright © 2024-2026 Stampcoin Platform. All Rights Reserved.
+ * @license Proprietary - See LICENSE file for details
+ * 
+ * PROPRIETARY AND CONFIDENTIAL
+ * Unauthorized copying, modification, distribution, or use is strictly prohibited.
+ * For licensing inquiries: legal@stampcoin.platform
+ */
+
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";

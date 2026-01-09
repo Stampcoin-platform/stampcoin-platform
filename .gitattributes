@@ -1,0 +1,41 @@
+# Git Attributes for Stampcoin Platform
+# Copyright © 2024-2026 Stampcoin Platform. All Rights Reserved.
+
+# Export control - prevent certain files from being included in archives
+LICENSE export-ignore
+COPYRIGHT export-ignore
+INTELLECTUAL_PROPERTY.md export-ignore
+TRADEMARK_NOTICE.md export-ignore
+COPYRIGHT_HEADER.txt export-ignore
+.gitattributes export-ignore
+
+# Prevent binary files from being diffed
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+
+# Mark text files for proper line endings
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.sh text eol=lf
+
+# Mark generated files
+dist/** linguist-generated=true
+client/dist/** linguist-generated=true
+*.min.js linguist-generated=true
+*.min.css linguist-generated=true
+
+# Mark vendor files
+node_modules/** linguist-vendored=true

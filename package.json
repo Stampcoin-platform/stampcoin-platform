@@ -1,8 +1,35 @@
 {
   "name": "stampcoin-platform",
   "version": "1.0.0",
+  "description": "Revolutionary blockchain-powered NFT marketplace for rare stamp collecting and trading",
   "type": "module",
-  "license": "MIT",
+  "license": "UNLICENSED",
+  "private": true,
+  "author": {
+    "name": "Stampcoin Platform",
+    "email": "info@stampcoin.platform",
+    "url": "https://stampcoin.platform"
+  },
+  "copyright": "Copyright © 2024-2026 Stampcoin Platform. All Rights Reserved.",
+  "homepage": "https://stampcoin.platform",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Stampcoin-platform/Stampcoin-platform"
+  },
+  "bugs": {
+    "url": "https://github.com/Stampcoin-platform/Stampcoin-platform/issues",
+    "email": "support@stampcoin.platform"
+  },
+  "keywords": [
+    "nft",
+    "blockchain",
+    "stamps",
+    "cryptocurrency",
+    "marketplace",
+    "polygon",
+    "web3",
+    "digital-collectibles"
+  ],
   "scripts": {
     "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
     "build": "esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",

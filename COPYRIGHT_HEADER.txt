@@ -1,0 +1,16 @@
+/**
+ * @fileoverview StampCoin Platform - Copyright Header Template
+ * @copyright © 2024-2026 Stampcoin Platform. All Rights Reserved.
+ * @license Proprietary - See LICENSE file for details
+ * 
+ * PROPRIETARY AND CONFIDENTIAL
+ * 
+ * This file is part of the Stampcoin Platform proprietary software.
+ * Unauthorized copying, modification, distribution, or use of this file,
+ * via any medium, is strictly prohibited without express written permission.
+ * 
+ * For licensing inquiries: legal@stampcoin.platform
+ * 
+ * @author Stampcoin Platform Development Team
+ * @version 1.0.0
+ */

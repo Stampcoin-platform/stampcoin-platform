@@ -1,3 +1,13 @@
+/**
+ * @fileoverview StampCoin Platform - Vite Build Configuration
+ * @copyright © 2024-2026 Stampcoin Platform. All Rights Reserved.
+ * @license Proprietary - See LICENSE file for details
+ * 
+ * PROPRIETARY AND CONFIDENTIAL
+ * Unauthorized copying, modification, distribution, or use is strictly prohibited.
+ * For licensing inquiries: legal@stampcoin.platform
+ */
+
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";

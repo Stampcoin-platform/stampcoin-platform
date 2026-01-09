@@ -1,8 +1,13 @@
 # StampCoin Platform 🪙
 
+**© 2024-2026 Stampcoin Platform - Proprietary and Confidential**
+
 منصة ثورية لتداول الطوابع الرقمية كـ NFTs مدعومة بتقنية Blockchain.
 
 A revolutionary blockchain-powered NFT marketplace for rare stamp collecting and trading.
+
+> ⚠️ **NOTICE:** This is proprietary software. All rights reserved. Unauthorized use is prohibited.  
+> 📋 See [LICENSE](LICENSE), [COPYRIGHT](COPYRIGHT), and [INTELLECTUAL_PROPERTY.md](INTELLECTUAL_PROPERTY.md) for details.
 
 ## 🌟 الحالة الحالية | Current Status
 
@@ -276,19 +281,43 @@ npm run build:frontend
 npm run build
 ```
 
-## 📄 License
+## 📄 License & Copyright
 
-MIT License - see LICENSE file for details
+**© 2024-2026 Stampcoin Platform. All Rights Reserved.**
+
+This software is proprietary and confidential. Unauthorized copying, modification,
+distribution, or use of this software, via any medium, is strictly prohibited 
+without express written permission.
+
+**License:** UNLICENSED - Proprietary Software  
+**See:** [LICENSE](LICENSE) and [COPYRIGHT](COPYRIGHT) files for complete terms
+
+📋 **[Full Intellectual Property Documentation](INTELLECTUAL_PROPERTY.md)**
+
+### ⚠️ Important Notice
+
+- ✅ This is **proprietary software** - not open source
+- ❌ **No redistribution** without written permission
+- ❌ **No commercial use** without license agreement
+- ❌ **No reverse engineering** or decompilation
+- ❌ **No trademark usage** without authorization
+
+For licensing inquiries: **legal@stampcoin.platform**
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+For major contributions, please contact us first to discuss the proposed changes.
+
 ## 📧 Contact
 
-- **Email:** partnerships@stampcoin.io
-- **Website:** https://stampcoin-platform.fly.dev
-- **GitHub:** https://github.com/AzadZedan/Stampcoin-platform
+- **General:** info@stampcoin.platform
+- **Legal/Licensing:** legal@stampcoin.platform
+- **Partnerships:** partners@stampcoin.platform
+- **Support:** support@stampcoin.platform
+- **Website:** https://stampcoin.platform
+- **Repository:** https://github.com/Stampcoin-platform/Stampcoin-platform
 
 ## 🙏 Acknowledgments
 
