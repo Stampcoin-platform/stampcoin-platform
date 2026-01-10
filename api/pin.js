@@ -2,7 +2,6 @@
 // Compatible with Vercel Serverless (place in /api/pin.js).
 // Expects POST with JSON: { name, description, imageBase64, pinata }
 const { NFTStorage, File } = require('nft.storage');
-const fetch = require('node-fetch');
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
