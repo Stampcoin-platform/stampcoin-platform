@@ -45,7 +45,7 @@ jobs:
         run: pnpm -r --if-present lint
 
       - name: Run coverage
-        run: pnpm test:coverage -- --reporter=json-summary
+        run: pnpm test -- --reporter=json-summary --coverage
 
       - name: Generate coverage badge
         run: node scripts/update-coverage-badge.mjs
