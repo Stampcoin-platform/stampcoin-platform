@@ -5,7 +5,11 @@
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+// Max file size (default 5MB, configurable via MAX_FILE_SIZE_MB env var)
+const MAX_BYTES = (parseInt(process.env.MAX_FILE_SIZE_MB) || 5) * 1024 * 1024;
+
+// Allowed MIME types for security
+const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml'];
 
 function isBase64DataUrl(s) {
   return typeof s === 'string' && s.startsWith('data:') && s.includes(';base64,');
@@ -33,15 +37,25 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'imageBase64 must be a data URL (e.g., data:image/png;base64,...)' });
     }
 
+    // Validate MIME type
+    const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
+    if (!mimeMatch) {
+      return res.status(400).json({ error: 'Invalid data URL format' });
+    }
+    
+    const mimeType = mimeMatch[1];
+    if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+      return res.status(400).json({ 
+        error: `Unsupported MIME type: ${mimeType}. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}` 
+      });
+    }
+
     const base64 = imageBase64.split(',')[1];
     const buffer = Buffer.from(base64, 'base64');
 
     if (buffer.length > MAX_BYTES) {
-      return res.status(413).json({ error: `File too large. Max ${MAX_BYTES} bytes.` });
+      return res.status(413).json({ error: `File too large. Max ${MAX_BYTES} bytes (${MAX_BYTES / 1024 / 1024}MB).` });
     }
-
-    const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
-    const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
     const ext = mimeType.split('/')[1] || 'bin';
     const filename = name ? `${name}.${ext}` : `upload.${ext}`;
 

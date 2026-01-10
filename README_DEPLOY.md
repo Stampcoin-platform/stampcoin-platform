@@ -240,10 +240,21 @@ The `/api/pin` endpoint allows you to pin files to IPFS via Pinata.
 }
 ```
 
-### Size Limits
+### File Restrictions
 
-- Maximum file size: **5 MB**
-- Increase by modifying `MAX_BYTES` in `api/pin.js`
+**Size Limits**:
+- Default maximum file size: **5 MB**
+- Configurable via `MAX_FILE_SIZE_MB` environment variable
+- Example: Set `MAX_FILE_SIZE_MB=10` to allow up to 10MB files
+
+**Allowed File Types**:
+- PNG (`image/png`)
+- JPEG/JPG (`image/jpeg`, `image/jpg`)
+- GIF (`image/gif`)
+- WebP (`image/webp`)
+- SVG (`image/svg+xml`)
+
+Other file types will be rejected for security reasons.
 
 ### Usage Example
 
