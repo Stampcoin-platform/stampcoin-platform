@@ -2,6 +2,10 @@ name: Deploy to Railway
 on:
   push:
     branches: [ "main" ]
+
+permissions:
+  contents: read
+
 jobs:
   build-and-trigger-railway:
     runs-on: ubuntu-latest

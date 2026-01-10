@@ -2,6 +2,10 @@ name: Deploy to Fly
 on:
   push:
     branches: [ "main" ]
+
+permissions:
+  contents: read
+
 jobs:
   build-and-deploy-fly:
     runs-on: ubuntu-latest
