@@ -1,12 +1,11 @@
-// Serverless endpoint for pinning to nft.storage and optionally Pinata.
+// Serverless endpoint for pinning to IPFS via Pinata.
 // Compatible with Vercel Serverless (place in /api/pin.js).
-// Expects POST with JSON: { name, description, imageBase64, pinata }
-const { NFTStorage, File } = require('nft.storage');
+// Expects POST with JSON: { name, description, imageBase64 }
+// Note: nft.storage has been decommissioned and is no longer supported.
 const fetch = require('node-fetch');
+const FormData = require('form-data');
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
-
-const nft = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY || '' });
 
 function isBase64DataUrl(s) {
   return typeof s === 'string' && s.startsWith('data:') && s.includes(';base64,');
@@ -23,10 +22,9 @@ module.exports = async (req, res) => {
     let name = '';
     let description = '';
     let imageBase64 = '';
-    let pinata = false;
 
     if (contentType.includes('application/json')) {
-      ({ name = '', description = '', imageBase64 = '', pinata = false } = req.body || {});
+      ({ name = '', description = '', imageBase64 = '' } = req.body || {});
     } else {
       return res.status(400).json({ error: 'Unsupported content type. Use application/json with imageBase64.' });
     }
@@ -45,51 +43,68 @@ module.exports = async (req, res) => {
     const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
     const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
     const ext = mimeType.split('/')[1] || 'bin';
-    const filename = `upload.${ext}`;
+    const filename = name ? `${name}.${ext}` : `upload.${ext}`;
 
-    // Pin via nft.storage
-    const file = new File([buffer], filename, { type: mimeType });
-    const metadata = await nft.store({
-      image: file,
-      name: name || 'untitled',
-      description: description || ''
-    });
+    // Check Pinata credentials
+    const pinataJwt = process.env.PINATA_JWT || '';
+    const pinataApiKey = process.env.PINATA_API_KEY || '';
+    const pinataSecret = process.env.PINATA_SECRET_API_KEY || '';
 
-    const result = { nftStorage: metadata };
-
-    // Optionally pin to Pinata
-    if (pinata === true) {
-      const pinataJwt = process.env.PINATA_JWT || '';
-      const pinataApiKey = process.env.PINATA_API_KEY || '';
-      const pinataSecret = process.env.PINATA_SECRET_API_KEY || '';
-
-      const FormData = require('form-data');
-      const form = new FormData();
-      form.append('file', buffer, { filename });
-
-      const headers = {};
-      if (pinataJwt) {
-        headers.Authorization = `Bearer ${pinataJwt}`;
-      } else {
-        headers.pinata_api_key = pinataApiKey;
-        headers.pinata_secret_api_key = pinataSecret;
-      }
-
-      const pinataResp = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-        method: 'POST',
-        headers,
-        body: form
+    if (!pinataJwt && (!pinataApiKey || !pinataSecret)) {
+      return res.status(500).json({ 
+        error: 'IPFS pinning not configured. Set PINATA_JWT or PINATA_API_KEY/PINATA_SECRET_API_KEY environment variables.' 
       });
-
-      if (!pinataResp.ok) {
-        const text = await pinataResp.text();
-        result.pinata = { ok: false, status: pinataResp.status, message: text };
-      } else {
-        result.pinata = await pinataResp.json();
-      }
     }
 
-    return res.status(200).json(result);
+    // Pin to Pinata
+    const form = new FormData();
+    form.append('file', buffer, { filename });
+
+    // Add metadata if provided
+    if (name || description) {
+      const metadata = {
+        name: filename,
+        keyvalues: {}
+      };
+      if (name) metadata.keyvalues.name = name;
+      if (description) metadata.keyvalues.description = description;
+      form.append('pinataMetadata', JSON.stringify(metadata));
+    }
+
+    const headers = {};
+    if (pinataJwt) {
+      headers.Authorization = `Bearer ${pinataJwt}`;
+    } else {
+      headers.pinata_api_key = pinataApiKey;
+      headers.pinata_secret_api_key = pinataSecret;
+    }
+
+    const pinataResp = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      method: 'POST',
+      headers,
+      body: form
+    });
+
+    if (!pinataResp.ok) {
+      const text = await pinataResp.text();
+      return res.status(pinataResp.status).json({ 
+        error: 'Failed to pin to Pinata', 
+        details: text 
+      });
+    }
+
+    const result = await pinataResp.json();
+    
+    // Return standardized response
+    return res.status(200).json({
+      success: true,
+      ipfsHash: result.IpfsHash,
+      pinSize: result.PinSize,
+      timestamp: result.Timestamp,
+      ipfsUrl: `ipfs://${result.IpfsHash}`,
+      gatewayUrl: `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`,
+      metadata: { name, description }
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message || 'Server error' });

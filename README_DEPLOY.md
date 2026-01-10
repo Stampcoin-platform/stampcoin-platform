@@ -20,8 +20,10 @@ This guide explains how to set up CI/CD workflows for Vercel, Fly.io, and Railwa
 
 This repository now includes:
 - **CI/CD Workflows**: Automated deployment pipelines for Vercel, Fly.io, and Railway
-- **IPFS Pinning Endpoint**: A secure serverless function (`/api/pin`) for pinning files to nft.storage and optionally Pinata
+- **IPFS Pinning Endpoint**: A secure serverless function (`/api/pin`) for pinning files to IPFS via Pinata
 - **Example Client**: A JavaScript example showing how to use the pinning endpoint
+
+**Note**: This implementation uses Pinata for IPFS pinning. nft.storage has been decommissioned and no longer accepts uploads.
 
 ## Files Added
 
@@ -47,9 +49,8 @@ Before deploying, ensure you have:
    - [Vercel Account](https://vercel.com) (for Vercel deployment)
    - [Fly.io Account](https://fly.io) (for Fly.io deployment)
    - [Railway Account](https://railway.app) (for Railway deployment)
-3. **IPFS Storage Accounts**:
-   - [nft.storage](https://nft.storage) API key (required)
-   - [Pinata](https://pinata.cloud) API credentials (optional)
+3. **IPFS Storage Account**:
+   - [Pinata](https://pinata.cloud) API credentials (required)
 
 ## Setting Up GitHub Secrets
 
@@ -60,20 +61,16 @@ All workflows require secrets to be configured in your GitHub repository. Follow
 3. Click **New repository secret**
 4. Add the following secrets based on which platforms you're using:
 
-### Required for All Deployments
+### Required for IPFS Pinning
 
 ```
-NFT_STORAGE_API_KEY        # Your nft.storage API key
-```
-
-### Optional (for Pinata support)
-
-```
+PINATA_JWT                 # Your Pinata JWT token (recommended)
+# OR
 PINATA_API_KEY             # Your Pinata API key
 PINATA_SECRET_API_KEY      # Your Pinata secret key
-# OR
-PINATA_JWT                 # Your Pinata JWT token (newer method)
 ```
+
+**Note**: nft.storage has been decommissioned and is no longer accepting uploads. Pinata is now the only supported IPFS provider.
 
 ### Platform-Specific Secrets
 
@@ -192,7 +189,9 @@ RAILWAY_PROJECT_ID         # Your Railway project ID (optional if using GitHub i
 
 ## IPFS Pinning Endpoint
 
-The `/api/pin` endpoint allows you to pin files to IPFS via nft.storage and optionally Pinata.
+The `/api/pin` endpoint allows you to pin files to IPFS via Pinata.
+
+**Important**: nft.storage has been decommissioned and is no longer accepting uploads. This endpoint now uses Pinata exclusively for IPFS pinning.
 
 ### Endpoint Details
 
@@ -206,8 +205,7 @@ The `/api/pin` endpoint allows you to pin files to IPFS via nft.storage and opti
 {
   "name": "My NFT",
   "description": "Description of the NFT",
-  "imageBase64": "data:image/png;base64,iVBORw0KG...",
-  "pinata": false
+  "imageBase64": "data:image/png;base64,iVBORw0KG..."
 }
 ```
 
@@ -215,21 +213,21 @@ The `/api/pin` endpoint allows you to pin files to IPFS via nft.storage and opti
 - `name` (string, optional): Name for the NFT metadata
 - `description` (string, optional): Description for the NFT metadata
 - `imageBase64` (string, required): Base64-encoded data URL (e.g., `data:image/png;base64,...`)
-- `pinata` (boolean, optional): Set to `true` to also pin to Pinata (default: `false`)
 
 ### Response
 
 **Success (200)**:
 ```json
 {
-  "nftStorage": {
-    "url": "ipfs://...",
-    "data": { ... }
-  },
-  "pinata": {
-    "IpfsHash": "Qm...",
-    "PinSize": 12345,
-    "Timestamp": "2024-01-10T12:00:00.000Z"
+  "success": true,
+  "ipfsHash": "Qm...",
+  "pinSize": 12345,
+  "timestamp": "2024-01-10T12:00:00.000Z",
+  "ipfsUrl": "ipfs://Qm...",
+  "gatewayUrl": "https://gateway.pinata.cloud/ipfs/Qm...",
+  "metadata": {
+    "name": "My NFT",
+    "description": "Description of the NFT"
   }
 }
 ```
@@ -237,7 +235,8 @@ The `/api/pin` endpoint allows you to pin files to IPFS via nft.storage and opti
 **Error (400/413/500)**:
 ```json
 {
-  "error": "Error message"
+  "error": "Error message",
+  "details": "Additional error details"
 }
 ```
 
@@ -256,55 +255,47 @@ const reader = new FileReader();
 reader.onload = async (e) => {
   const imageBase64 = e.target.result;
   
-  // Pin to IPFS
+  // Pin to IPFS via Pinata
   const response = await fetch('/api/pin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: 'My NFT',
       description: 'A cool NFT',
-      imageBase64: imageBase64,
-      pinata: false
+      imageBase64: imageBase64
     })
   });
   
   const result = await response.json();
   console.log('Pinned to IPFS:', result);
+  console.log('IPFS URL:', result.ipfsUrl);
+  console.log('Gateway URL:', result.gatewayUrl);
 };
 reader.readAsDataURL(file);
 ```
 
 ### Required Environment Variables
 
-For the pinning endpoint to work, you must set:
+For the pinning endpoint to work, you must set one of the following:
 
-```bash
-NFT_STORAGE_API_KEY=your_nft_storage_key
-```
-
-Optional (for Pinata):
 ```bash
 # Use JWT (recommended)
 PINATA_JWT=your_pinata_jwt
 
-# OR use API key/secret (legacy)
+# OR use API key/secret
 PINATA_API_KEY=your_pinata_api_key
 PINATA_SECRET_API_KEY=your_pinata_secret_key
 ```
 
 ### Getting API Keys
 
-1. **nft.storage**:
-   - Go to https://nft.storage
-   - Sign up/login
-   - Go to "API Keys" section
-   - Create a new API key
+**Pinata**:
+- Go to https://pinata.cloud
+- Sign up/login
+- Go to "API Keys" section
+- Create a new API key (JWT recommended)
 
-2. **Pinata** (optional):
-   - Go to https://pinata.cloud
-   - Sign up/login
-   - Go to "API Keys" section
-   - Create a new API key (JWT recommended)
+**Note**: nft.storage has been decommissioned and is no longer accepting uploads as of 2023.
 
 ## Security Recommendations
 
@@ -348,7 +339,6 @@ npm update
 ```
 
 Check for vulnerabilities in:
-- `nft.storage`
 - `node-fetch`
 - `form-data`
 
@@ -371,9 +361,9 @@ Check for vulnerabilities in:
 - Either set `RAILWAY_PROJECT_ID` in GitHub Secrets
 - Or enable Railway's GitHub integration in the dashboard
 
-### API Returns 500: "NFTStorage is not a constructor"
-- Install missing dependencies: `npm install nft.storage node-fetch`
-- Ensure `NFT_STORAGE_API_KEY` is set in environment variables
+### API Returns 500: "IPFS pinning not configured"
+- Ensure either `PINATA_JWT` or both `PINATA_API_KEY` and `PINATA_SECRET_API_KEY` are set in environment variables
+- Check that your Pinata API credentials are valid
 
 ### Pinata Returns "Unauthorized"
 - Check your Pinata JWT or API key/secret
@@ -390,7 +380,6 @@ Check for vulnerabilities in:
 - [Vercel Documentation](https://vercel.com/docs)
 - [Fly.io Documentation](https://fly.io/docs/)
 - [Railway Documentation](https://docs.railway.app/)
-- [nft.storage Documentation](https://nft.storage/docs/)
 - [Pinata Documentation](https://docs.pinata.cloud/)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 

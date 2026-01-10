@@ -41,10 +41,18 @@ jobs:
             echo "RAILWAY_TOKEN secret is missing. Skipping Railway deploy."
             exit 1
           fi
-          railway login --apiKey "$RAILWAY_TOKEN" || true
+          railway login --apiKey "$RAILWAY_TOKEN"
           if [ -n "$RAILWAY_PROJECT_ID" ]; then
-            railway up --ci --project "$RAILWAY_PROJECT_ID" || echo "railway up failed; consider configuring GitHub integration in Railway dashboard."
+            if ! railway up --ci --project "$RAILWAY_PROJECT_ID"; then
+              echo "Railway deployment failed. Please check:"
+              echo "1. RAILWAY_PROJECT_ID is correct"
+              echo "2. Railway GitHub integration is configured"
+              echo "3. Project permissions allow CLI deployments"
+              exit 1
+            fi
           else
-            echo "RAILWAY_PROJECT_ID not set; ensure Railway GitHub integration is enabled or set RAILWAY_PROJECT_ID."
-            exit 0
+            echo "RAILWAY_PROJECT_ID not set. Please either:"
+            echo "1. Set RAILWAY_PROJECT_ID in GitHub Secrets, or"
+            echo "2. Enable Railway GitHub integration in the Railway dashboard"
+            exit 1
           fi
