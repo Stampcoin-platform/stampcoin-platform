@@ -10,6 +10,20 @@ import { authenticatedStamps } from '../db/stamp-authentication-schema';
 import { eq, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { randomBytes, createHash } from 'crypto';
+import {
+  RarityEnum,
+  StampConditionEnum,
+  ShippingCompanyEnum,
+  AddressSchema,
+} from '../../shared/schemas';
+import {
+  calculateAuthenticationFee,
+  getNFTMintingFee,
+  getStorageFee,
+  convertToStampCoin,
+  calculatePlatformFee,
+  PLATFORM_FEE_PERCENTAGE,
+} from '../../shared/fee-utils';
 
 // ============================================================================
 // Schemas
@@ -20,9 +34,9 @@ const CreateStampAuthInput = z.object({
   stampCountry: z.string().min(1, 'دولة الطابع مطلوبة'),
   stampYear: z.number().optional(),
   stampCatalogNumber: z.string().optional(),
-  stampCondition: z.enum(['mint', 'used', 'fine', 'very_fine']),
+  stampCondition: StampConditionEnum,
   estimatedValue: z.string().regex(/^\d+\.?\d*$/, 'قيمة غير صحيحة'),
-  rarity: z.enum(['common', 'uncommon', 'rare', 'very_rare', 'legendary']),
+  rarity: RarityEnum,
   description: z.string().optional(),
   image: z.unknown(), // سيتم التعامل مع الصورة بشكل منفصل
 });
@@ -34,14 +48,14 @@ const StampUploadSchema = z.object({
   year: z.number().optional(),
   denomination: z.string().optional(),
   condition: z.string(),
-  rarity: z.enum(['common', 'uncommon', 'rare', 'very_rare', 'legendary']),
+  rarity: RarityEnum,
   estimatedValue: z.number(),
   images: z.array(z.string()).default([]),
 });
 
 const MintingCostCalculation = z.object({
   stampValue: z.number(),
-  rarity: z.enum(['common', 'uncommon', 'rare', 'very_rare', 'legendary']),
+  rarity: RarityEnum,
 });
 
 // ============================================================================
@@ -49,67 +63,15 @@ const MintingCostCalculation = z.object({
 // ============================================================================
 
 /**
- * حساب سعر التوثيق بناءً على قيمة الطابع
- * Calculate authentication fee based on stamp value
- */
-function calculateAuthenticationFee(estimatedValue: number): number {
-  // 5% من القيمة المقدرة، بحد أدنى 5 و حد أقصى 1000
-  const fee = Math.max(5, Math.min(estimatedValue * 0.05, 1000));
-  return parseFloat(fee.toFixed(2));
-}
-
-/**
- * حساب سعر السك
- * Calculate NFT minting fee
- */
-function getNFTMintingFee(): number {
-  return 10; // رسم ثابت
-}
-
-/**
- * حساب سعر التخزين
- * Calculate storage fee
- */
-function getStorageFee(): number {
-  return 2; // رسم ثابت شهري
-}
-
-/**
- * حساب قيمة الطابع بعملة المنصة
- * Convert value to platform currency (STAMP_COIN)
- */
-function convertToStampCoin(usdValue: number): number {
-  // تحويل من دولار إلى عملة الموقع (يمكن تغيير السعر لاحقاً)
-  const exchangeRate = 100; // 1 دولار = 100 عملة موقع
-  return Math.round(usdValue * exchangeRate);
-}
-
-/**
  * طلب بدء تداول طابع مادي
  */
 const PhysicalTradeSchema = z.object({
   stampId: z.number(),
   agreedPrice: z.number(),
-  shippingCompany: z.enum(['DHL', 'FedEx', 'UPS', 'USPS', 'Aramex']),
+  shippingCompany: ShippingCompanyEnum,
   insuranceAmount: z.number(),
-  buyerAddress: z.object({
-    fullName: z.string(),
-    street: z.string(),
-    city: z.string(),
-    state: z.string(),
-    zipCode: z.string(),
-    country: z.string(),
-    phone: z.string(),
-  }),
-  sellerAddress: z.object({
-    fullName: z.string(),
-    street: z.string(),
-    city: z.string(),
-    state: z.string(),
-    zipCode: z.string(),
-    country: z.string(),
-    phone: z.string(),
-  }),
+  buyerAddress: AddressSchema,
+  sellerAddress: AddressSchema,
 });
 
 // ============================================================================
@@ -181,7 +143,7 @@ function calculateEscrowDeposit(stampValue: number, shippingCost: number): {
   const sellerDeposit = stampValue * 0.20;
 
   // Platform fee: 5% of transaction
-  const platformFee = stampValue * 0.05;
+  const platformFee = calculatePlatformFee(stampValue);
 
   const totalRequired = buyerDeposit + sellerDeposit;
 
