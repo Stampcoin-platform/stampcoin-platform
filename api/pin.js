@@ -1,7 +1,9 @@
 // Serverless endpoint for pinning to nft.storage and optionally Pinata.
 // Compatible with Vercel Serverless (place in /api/pin.js).
 // Expects POST with JSON: { name, description, imageBase64, pinata }
+// Note: Uses native fetch API (Node.js 18+)
 const { NFTStorage, File } = require('nft.storage');
+const FormData = require('form-data');
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -62,7 +64,6 @@ module.exports = async (req, res) => {
       const pinataApiKey = process.env.PINATA_API_KEY || '';
       const pinataSecret = process.env.PINATA_SECRET_API_KEY || '';
 
-      const FormData = require('form-data');
       const form = new FormData();
       form.append('file', buffer, { filename });
 
