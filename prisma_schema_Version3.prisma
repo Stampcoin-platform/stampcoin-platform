@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("user")
+  stamps    Stamp[]  @relation("creator")
+  createdAt DateTime @default(now())
+}
+
+model Stamp {
+  id          Int      @id @default(autoincrement())
+  title       String
+  country     String
+  year        Int?
+  description String?
+  images      Json     @default("[]")
+  isRare      Boolean  @default(false)
+  condition   String? 
+  provenance  Json?
+  price       Int?     @default(0) // price in cents
+  createdBy   Int?
+  creator     User?    @relation("creator", fields: [createdBy], references: [id])
+  comments    Comment[]
+  favorites   Favorite[]
+  createdAt   DateTime @default(now())
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  email     String
+  phone     String?
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  stamp     Stamp    @relation(fields: [stampId], references: [id])
+  stampId   Int
+  name      String?
+  email     String?
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  stamp     Stamp    @relation(fields: [stampId], references: [id])
+  stampId   Int
+  userEmail String?
+  createdAt DateTime @default(now())
+}

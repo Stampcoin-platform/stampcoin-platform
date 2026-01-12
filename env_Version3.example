@@ -1,0 +1,25 @@
+# Example environment variables (copy to .env and fill real values)
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="change_this_to_a_strong_secret"
+NEXT_PUBLIC_BASE_URL="http://localhost:3000"
+NEXT_PUBLIC_CONTACT_PHONE="+4915216933122"
+
+# Stripe
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_PUBLISHABLE_KEY="pk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+
+# PayPal
+PAYPAL_CLIENT_ID="PAYPAL_CLIENT_ID_HERE"
+PAYPAL_CLIENT_SECRET="PAYPAL_CLIENT_SECRET_HERE"
+
+# Crypto (optional)
+CEXIO_API_KEY=""
+CEXIO_API_SECRET=""
+COINBASE_COMMERCE_API_KEY=""
+
+# SMTP (optional)
+SMTP_HOST=""
+SMTP_PORT=""
+SMTP_USER=""
+SMTP_PASS=""
