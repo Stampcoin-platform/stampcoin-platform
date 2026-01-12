@@ -1,0 +1,15 @@
+# بيانات API (لا تضع أي قيمة حقيقية هنا — انسخ إلى .env وقم بتعبئتها محلياً)
+NFT_STORAGE_API_KEY="YOUR_NFT_STORAGE_API_KEY"
+PINATA_API_KEY="YOUR_PINATA_API_KEY"
+PINATA_SECRET_API_KEY="YOUR_PINATA_SECRET_API_KEY"
+
+# Blockchain (RPC & private key for minting) - استخدم testnet أثناء التطوير
+RPC_URL="https://rpc-mumbai.maticvigil.com"  # مثال لـ Polygon Mumbai
+DEPLOYER_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"    # لا تضعها في الريبو!
+
+# العنوان/الشبكة والـ contract (إذا نشرت العقد مسبقاً)
+NFT_CONTRACT_ADDRESS=""
+
+# إعدادات عامة
+OUTPUT_DIR="./output"   # حيث تُخزّن النتائج محلياً (CID, metadata)
+IMAGES_LIST="./images.txt"  # ملف نصي يحوي قائمة روابط الصور (واحد بالسطّر)
