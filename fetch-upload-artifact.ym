@@ -1,0 +1,64 @@
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: 'One or more URLs to fetch (separate with newlines or spaces)'
+        required: true
+        default: ''
+
+jobs:
+  fetch-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare workspace
+        run: |
+          mkdir -p artifacts
+
+      - name: Fetch files
+        env:
+          URLS: "${{ github.event.inputs.urls }}"
+        run: |
+          # Split on newlines and spaces, skip empty lines
+          echo "$URLS" | tr ' ' '\n' | while read -r url || [ -n "$url" ]; do
+            url="${url##*( )}"; url="${url%%*( )}"
+            [ -z "$url" ] && continue
+            # drop query string from filename
+            filename=$(basename "${url%%\?*}")
+            # If filename is empty, create a timestamped file
+            if [ -z "$filename" ]; then
+              filename="download_$(date +%s%N)"
+            fi
+            echo "Downloading: $url -> artifacts/$filename"
+            curl -fsSL "$url" -o "artifacts/$filename" || { echo "Failed to download $url"; exit 1; }
+          done
+
+      - name: Create upload_summary.json
+        run: |
+          python3 - <<'PY'
+          import os, json, hashlib
+          folder = 'artifacts'
+          summary = []
+          for fn in sorted(os.listdir(folder)):
+            path = os.path.join(folder, fn)
+            if not os.path.isfile(path):
+              continue
+            size = os.path.getsize(path)
+            h = hashlib.sha256()
+            with open(path,'rb') as f:
+              for chunk in iter(lambda: f.read(8192), b''):
+                h.update(chunk)
+            summary.append({
+              "filename": fn,
+              "size_bytes": size,
+              "sha256": h.hexdigest()
+            })
+          with open(os.path.join(folder, 'upload_summary.json'),'w') as out:
+            json.dump(summary, out, indent=2)
+          print("Created artifacts/upload_summary.json")
+          PY
+
+      - name: Upload artifacts (files + upload_summary.json)
+        uses: actions/upload-artifact@v4
+        with:
+          name: fetched-files
+          path: artifacts/*
