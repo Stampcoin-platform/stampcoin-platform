@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>To‑Do List (LocalStorage)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app" role="main">
+    <h1>To‑Do List</h1>
+
+    <form id="new-todo-form" class="new-todo-form" aria-label="Add new todo">
+      <input id="new-todo-input" class="new-todo-input" type="text" placeholder="What needs to be done?" aria-label="New todo"/>
+      <button type="submit" class="add-btn" aria-label="Add todo">Add</button>
+    </form>
+
+    <section class="controls">
+      <div class="filters" role="tablist" aria-label="Filter todos">
+        <button class="filter-btn active" data-filter="all" role="tab" aria-selected="true">All</button>
+        <button class="filter-btn" data-filter="active" role="tab" aria-selected="false">Active</button>
+        <button class="filter-btn" data-filter="completed" role="tab" aria-selected="false">Completed</button>
+      </div>
+      <div class="actions">
+        <span id="count" class="count" aria-live="polite">0 items</span>
+        <button id="clear-completed" class="clear-btn">Clear completed</button>
+      </div>
+    </section>
+
+    <ul id="todo-list" class="todo-list" aria-live="polite" aria-label="Todo list"></ul>
+
+    <footer class="footer">
+      <p>Saved locally in your browser (localStorage).</p>
+    </footer>
+  </main>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
