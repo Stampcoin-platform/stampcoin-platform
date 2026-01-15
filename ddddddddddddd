@@ -1,0 +1,14 @@
+[build]
+  builder = "paketobuildpacks/builder:base"
+
+[build.buildpacks]
+  id = "paketo-buildpacks/nodejs"
+"scripts": {
+  "build": "your-build-command",
+  "start": "node server.js"
+}
+[build]
+  builder = "paketobuildpacks/builder:base"
+
+[build.buildpacks]
+  id = "paketo-buildpacks/nodejs"
