@@ -1,0 +1,90 @@
+mcp_version: "1.0"
+agent_id: "copilot-agent-azad-001"
+description: "تفويض مقيد لوكيل Copilot لإجراء تغييرات برمجية مشروطة بمراجعة بشرية"
+owner: "AzadZedan"
+allowed_repositories:
+  - "Stampcoin-platform/stampcoin-platform"
+branch_restrictions:
+  protected_branches:
+    - "main"
+    - "release/*"
+  can_create_branches: true
+  can_delete_protected_branches: false
+allowed_actions:
+  read_code: true
+  create_branch: true
+  create_pr: true
+  comment_pr: true
+  modify_docs: true
+  run_ci_jobs: true
+  deploy_nonprod: true
+  merge_pr: false
+  direct_push_to_protected: false
+  modify_repo_settings: false
+  access_secrets: "vault_scoped"
+approval_requirements:
+  merge_to_main:
+    required_approvals: 2
+    required_checks:
+      - "unit_tests"
+      - "integration_tests"
+      - "sast_scan"
+    allow_human_override: false
+  deploy_production:
+    required_approvals: 3
+    incident_blockers:
+      - "critical_vuln"
+      - "failing_smoke"
+    allow_human_override: false
+account_integrations:
+  - name: "github"
+    type: "github_app"
+    auth_method: "github_app_private_key_via_vault"
+    notes: "Install on allowed_repositories only. Use installation tokens with narrow scope."
+  - name: "codegeex"
+    type: "third_party_api"
+    auth_method: "oauth_or_api_key_vaulted"
+    notes: "Use inference-only scope; do not permit model-management or billing scopes."
+  - name: "gitlab"
+    type: "oauth_app_or_token"
+    auth_method: "oauth_vaulted"
+    notes: "Grant read_repository and write_repository only when needed; prefer bot account."
+  - name: "aws"
+    type: "cloud_provider"
+    auth_method: "role_assumption_via_oidc_or_sts"
+    notes: "Use least-privilege IAM roles and avoid long-lived keys."
+  - name: "gcp"
+    type: "cloud_provider"
+    auth_method: "service_account_key_via_vault_or_workload_identity"
+    notes: "Prefer Workload Identity where possible."
+secret_handling:
+  method: "vault"
+  vault_paths_allowed:
+    - "secret/data/stampcoin/*"
+    - "transit/keys/stampcoin-agent"
+  rotation_policy_hours: 24
+  no_secrets_in_repo: true
+logging_and_audit:
+  log_destination: "centralized_log_service"
+  events_to_log:
+    - "all_actions"
+    - "token_issuance"
+    - "approval_decisions"
+    - "secret_access"
+  retain_days: 90
+revocation:
+  immediate_revoke_procedure:
+    - "revoke_vault_tokens_for_agent"
+    - "disable_github_app_installation"
+    - "remove_iam_role_trust_from_agent"
+onboarding_steps:
+  - "create_github_app_and_store_private_key_in_vault"
+  - "create_vault_policy_and_approle_for_agent"
+  - "install_app_on_allowed_repos"
+  - "test_agent_in_sandbox_repo"
+  - "enable_branch_protections_and_required_checks"
+risk_assessment:
+  max_risk_level_for_agent_actions: "medium"
+  actions_triggering_incident:
+    - "merge_to_main"
+    - "deploy_production"

@@ -1,0 +1,47 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowVaultSecretsRead",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:stampcoin/*"
+      ]
+    },
+    {
+      "Sid": "AllowAssumeRoleForBuilds",
+      "Effect": "Allow",
+      "Action": [
+        "sts:AssumeRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::ACCOUNT_ID:role/stampcoin-agent-execution-role"
+      ]
+    },
+    {
+      "Sid": "AllowCodeBuild",
+      "Effect": "Allow",
+      "Action": [
+        "codebuild:StartBuild",
+        "codebuild:BatchGetBuilds",
+        "codebuild:BatchGetProjects"
+      ],
+      "Resource": [
+        "arn:aws:codebuild:REGION:ACCOUNT_ID:project/stampcoin-*"
+      ]
+    },
+    {
+      "Sid": "CloudWatchLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:REGION:ACCOUNT_ID:log-group:/stampcoin-agent/*"
+    }
+  ]
+}
