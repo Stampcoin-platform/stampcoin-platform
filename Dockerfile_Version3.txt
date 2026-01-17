@@ -1,0 +1,27 @@
+# Use a small, supported Node base image and use the exec form for CMD.
+FROM node:18-alpine
+
+# Create app directory
+WORKDIR /app
+
+# Install dependencies first (cache friendly)
+COPY package*.json ./
+
+# Use npm ci for reproducible installs when package-lock.json exists.
+# Install only production deps to keep image small.
+RUN npm ci --production --silent
+
+# Copy app source
+COPY . .
+
+# Use non-root user for better security (optional but recommended)
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /app
+USER appuser
+
+# Let Fly (and Docker tests) control the port with env var PORT
+ENV PORT=8080
+EXPOSE 8080
+
+# Exec form — this avoids shell parsing problems seen in your logs
+CMD ["node", "server.js"]
