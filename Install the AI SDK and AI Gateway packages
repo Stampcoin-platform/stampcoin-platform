@@ -1,0 +1,3 @@
+mkdir demo && cd demo
+pnpm init
+pnpm install ai dotenv tsx @types/node
