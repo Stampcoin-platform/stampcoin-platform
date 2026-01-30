@@ -20,26 +20,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      
-  - name: Install pnpm
-    run: npm install -g pnpm
 
-  - name: Install dependencies
-    run: pnpm install --no-frozen-lockfile
-  
-  - name: Build frontend
-    env:
-      VITE_API_URL: https://stampcoin-platform.fly.dev
-    run: pnpm run build:frontend
-      
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build frontend
+        env:
+          VITE_API_URL: https://stampcoin-platform.fly.dev
+        run: pnpm run build:frontend
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
