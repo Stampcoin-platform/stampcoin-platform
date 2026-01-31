@@ -12,6 +12,7 @@ import {
   stampTrades,
 } from '../db/stamp-authentication-schema';
 import { eq } from 'drizzle-orm';
+import { ShippingCompanyEnum } from '../../shared/schemas';
 
 // ============================================================================
 // Schemas
@@ -20,7 +21,7 @@ import { eq } from 'drizzle-orm';
 const CreateShippingInput = z.object({
   tradeId: z.number(),
   stampId: z.number(),
-  shippingCompany: z.string(),
+  shippingCompany: ShippingCompanyEnum,
   trackingNumber: z.string(),
   senderName: z.string(),
   senderAddress: z.string(),

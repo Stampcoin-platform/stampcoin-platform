@@ -15,6 +15,8 @@ import {
   disputes,
 } from '../db/stamp-authentication-schema';
 import { eq, and } from 'drizzle-orm';
+import { OptionalAddressSchema } from '../../shared/schemas';
+import { calculateTotalPlatformFee } from '../../shared/fee-utils';
 
 // ============================================================================
 // Schemas
@@ -36,13 +38,7 @@ const CreateTradeInput = z.object({
   offeredPrice: z.number(),
   buyNft: z.boolean().default(false),
   buyPhysical: z.boolean().default(false),
-  buyerAddress: z.object({
-    fullName: z.string(),
-    street: z.string(),
-    city: z.string(),
-    zipCode: z.string(),
-    country: z.string(),
-  }).optional(),
+  buyerAddress: OptionalAddressSchema,
 });
 
 // ============================================================================
@@ -68,13 +64,7 @@ export const tradingRouter = router({
       }
 
       // حساب رسم المنصة (5%)
-      let platformFee = 0;
-      if (input.nftPrice) {
-        platformFee += input.nftPrice * 0.05;
-      }
-      if (input.physicalPrice) {
-        platformFee += input.physicalPrice * 0.05;
-      }
+      const platformFee = calculateTotalPlatformFee(input.nftPrice, input.physicalPrice);
 
       const result = await db.insert(stampListings).values({
         stampId: input.stampId,
@@ -142,7 +132,7 @@ export const tradingRouter = router({
       let totalAmount = 0;
       const nftPrice = input.buyNft ? parseFloat(listing.nftPrice?.toString() || '0') : 0;
       const physicalPrice = input.buyPhysical ? parseFloat(listing.physicalPrice?.toString() || '0') : 0;
-      const platformFee = (nftPrice + physicalPrice) * 0.05;
+      const platformFee = calculateTotalPlatformFee(nftPrice || undefined, physicalPrice || undefined);
       const shippingCost = input.buyPhysical ? 50 : 0; // تكلفة شحن افتراضية
       const insuranceCost = input.buyPhysical ? 10 : 0; // تأمين افتراضي
 
