@@ -1,0 +1,49 @@
+name: Deploy to Fly
+on:
+  push:
+    branches: [ "main" ]
+jobs:
+  build-and-deploy-fly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate repo contains .env.example
+        run: |
+          if [ ! -f .env.example ]; then
+            echo ".env.example not found. Add .env.example to the repo before deploying."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Install flyctl
+        run: |
+          curl -L https://fly.io/install.sh | sh
+          sudo mv ~/.fly/bin/flyctl /usr/local/bin/flyctl
+
+      - name: Deploy to Fly
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_APP_NAME: ${{ secrets.FLY_APP_NAME }}
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "FLY_API_TOKEN secret is missing. Skipping Fly deploy."
+            exit 1
+          fi
+          if [ ! -f fly.toml ]; then
+            echo "No fly.toml found. If you haven't created one run 'flyctl launch' locally and commit fly.toml."
+            exit 1
+          fi
+          flyctl auth token "$FLY_API_TOKEN"
+          flyctl deploy --config fly.toml --app "${FLY_APP_NAME:-}" --build-arg NODE_ENV=production
