@@ -14,7 +14,8 @@
     "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "init:archive": "tsx server/scripts/init-archive.ts",
-    "export:stamps": "tsx server/scripts/export-stamps-json.ts"
+    "export:stamps": "tsx server/scripts/export-stamps-json.ts",
+    "verify-secrets": "node scripts/verify-secrets.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.893.0",
