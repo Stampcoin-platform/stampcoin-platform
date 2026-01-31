@@ -1,5 +1,4 @@
 <<<<<<< HEAD
-name: Build and Push
 =======
 name: Build and Push Docker Image
 >>>>>>> 0e2049c (fix: حل تعارضات الدمج بحذف ملفات الإعدادات المتعارضة وتثبيت build-and-push2.yml)
