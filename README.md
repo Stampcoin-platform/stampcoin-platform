@@ -309,6 +309,23 @@ npm run check
 npm run format
 ```
 
+## 🔒 Security
+
+This project follows strict security best practices:
+
+- **Command Execution**: Array-based arguments to prevent shell injection ([docs/SECURE_COMMAND_EXECUTION.md](docs/SECURE_COMMAND_EXECUTION.md))
+- **Input Validation**: Zod schemas for all user inputs
+- **Authentication**: JWT-based secure authentication
+- **Secrets Management**: Environment variables only (never commit secrets)
+- **CodeQL Analysis**: Automated security scanning via GitHub Actions
+
+**Security Resources:**
+- [Security Policy](SECURITY.md) - Reporting vulnerabilities
+- [Command Execution Guidelines](docs/SECURE_COMMAND_EXECUTION.md) - Secure coding practices
+- [Command Execution Examples](docs/SECURE_COMMAND_EXAMPLES.md) - Practical examples
+
+**For security issues:** security@stampcoin.platform
+
 ## 🔧 Scripts
 
 - `npm dev` - Start development server

@@ -23,3 +23,16 @@ We kindly ask you to not create public issues for vulnerabilities prior to coord
 - Principle of least privilege for cloud/storage
 - CI checks for typing, tests, and coverage
 - CodeQL security analysis (GitHub Actions)
+- **Secure command execution** - Array-based arguments to prevent shell injection ([guidelines](docs/SECURE_COMMAND_EXECUTION.md))
+
+## Secure Command Execution
+
+This project follows strict guidelines for executing external commands to prevent shell injection attacks. All command execution must use array-based arguments instead of string concatenation.
+
+See [Secure Command Execution Guidelines](docs/SECURE_COMMAND_EXECUTION.md) for detailed information.
+
+**Quick Reference:**
+- ✅ Use `safeExecute('cat', ['file.txt'])` from `server/utils/safe-command.ts`
+- ❌ Never use `exec(\`cat ${filename}\`)`
+- ✅ Use `spawn('npm', ['install', packageName])`
+- ❌ Never use `exec(\`npm install ${packageName}\`)`
