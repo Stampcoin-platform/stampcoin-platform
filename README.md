@@ -61,12 +61,93 @@ cd stampcoin-platform
 ```
 Weitere Infos: [INSTALLATION.md](INSTALLATION.md)
 
+---
+
+## النشر والتشغيل / Deployment & Running / Bereitstellung & Ausführung
+
+### العربية 🇸🇦
+#### المتطلبات الأساسية
+- Node.js >= 16.x
+- Python >= 3.8
+- Git
+
+#### بدء التطوير
+```bash
+npm install
+npm run dev
 ```
-git clone https://github.com/stampcoin-platform/stampcoin-platform.git
-cd stampcoin-platform
-# Install dependencies as described in INSTALLATION.md
+
+#### البناء للإنتاج
+```bash
+npm run build
+npm run start
 ```
-See [INSTALLATION.md](INSTALLATION.md) for details.
+
+#### الاختبارات
+```bash
+npm test
+npm run lint
+```
+
+### English 🇬🇧
+#### Prerequisites
+- Node.js >= 16.x
+- Python >= 3.8
+- Git
+
+#### Development
+```bash
+npm install
+npm run dev
+```
+
+#### Production Build
+```bash
+npm run build
+npm run start
+```
+
+#### Testing
+```bash
+npm test
+npm run lint
+```
+
+### Deutsch 🇩🇪
+#### Voraussetzungen
+- Node.js >= 16.x
+- Python >= 3.8
+- Git
+
+#### Entwicklung
+```bash
+npm install
+npm run dev
+```
+
+#### Produktion
+```bash
+npm run build
+npm run start
+```
+
+#### Tests
+```bash
+npm test
+npm run lint
+```
+
+---
+
+## الأمان / Security / Sicherheit
+
+⚠️ **تحذير أمني مهم** / **SECURITY WARNING** / **SICHERHEITSWARNUNG**
+
+- لا تشارك مفاتيح API أو كلمات المرور في المستودع
+- استخدم متغيرات البيئة (.env) للبيانات الحساسة
+- راجع [SECURITY.md](SECURITY.md) للمزيد من التفاصيل
+
+---
 
 ### Contributions
 
