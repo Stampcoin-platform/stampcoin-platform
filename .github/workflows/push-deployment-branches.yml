@@ -1,0 +1,78 @@
+name: Push Deployment Branches
+on:
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  push-branches:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all branches
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Push deployment branches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Push all four branches
+          git push origin add/vercel-deploy-workflow || echo "Branch add/vercel-deploy-workflow already pushed or doesn't exist"
+          git push origin add/fly-deploy-workflow || echo "Branch add/fly-deploy-workflow already pushed or doesn't exist"
+          git push origin add/railway-deploy-workflow || echo "Branch add/railway-deploy-workflow already pushed or doesn't exist"
+          git push origin add/api-pin-endpoint || echo "Branch add/api-pin-endpoint already pushed or doesn't exist"
+          echo "✓ Branches pushed"
+      
+      - name: Create Pull Requests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # PR 1: Vercel
+          gh pr create \
+            --base main \
+            --head add/vercel-deploy-workflow \
+            --title "Add Vercel deploy workflow" \
+            --body "- Adds a GitHub Actions workflow that builds the project and deploys to Vercel on pushes to \`main\`.
+          - Validates \`.env.example\` exists and that \`VERCEL_TOKEN\` secret is set before attempting deployment.
+          - Uses \`setup-node\` cache for faster installs and \`npx --yes vercel\` to avoid global installs." \
+            || echo "PR for add/vercel-deploy-workflow may already exist"
+          
+          # PR 2: Fly
+          gh pr create \
+            --base main \
+            --head add/fly-deploy-workflow \
+            --title "Add Fly deploy workflow" \
+            --body "- Adds a GitHub Actions workflow that builds the project and deploys to Fly on pushes to \`main\`.
+          - Validates \`.env.example\` exists and that \`FLY_API_TOKEN\` secret is set before attempting deployment.
+          - Requires a committed \`fly.toml\` and uses \`flyctl\` installed at runtime." \
+            || echo "PR for add/fly-deploy-workflow may already exist"
+          
+          # PR 3: Railway
+          gh pr create \
+            --base main \
+            --head add/railway-deploy-workflow \
+            --title "Add Railway deploy workflow" \
+            --body "- Adds a GitHub Actions workflow that builds the project and triggers Railway on pushes to \`main\`.
+          - Validates \`.env.example\` exists and that \`RAILWAY_TOKEN\` secret is set before attempting deployment.
+          - Installs the Railway CLI and triggers \`railway up --ci\` when \`RAILWAY_PROJECT_ID\` is set; otherwise exits gracefully." \
+            || echo "PR for add/railway-deploy-workflow may already exist"
+          
+          # PR 4: API endpoint
+          gh pr create \
+            --base main \
+            --head add/api-pin-endpoint \
+            --title "Add API pin endpoint" \
+            --body "- Adds serverless endpoint for pinning to nft.storage and optionally Pinata
+          - Compatible with Vercel Serverless (place in /api/pin.js)
+          - Expects POST with JSON: { name, description, imageBase64, pinata }
+          - Includes proper error handling and validation" \
+            || echo "PR for add/api-pin-endpoint may already exist"
+          
+          echo "✓ PRs created"
