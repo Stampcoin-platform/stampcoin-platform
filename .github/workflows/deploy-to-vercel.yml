@@ -1,0 +1,52 @@
+name: Deploy to Vercel
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate repo contains .env.example
+        run: |
+          if [ ! -f .env.example ]; then
+            echo ".env.example not found. Add .env.example to the repo before deploying."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Ensure VERCEL_TOKEN secret exists
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "VERCEL_TOKEN secret is not set. Add it in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}       # optional: set if you want to scope to an org/team
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }} # optional: set to deploy to a specific project
+        run: |
+          ARGS="--prod --confirm --token \"$VERCEL_TOKEN\""
+          if [ -n "$VERCEL_PROJECT_ID" ]; then
+            ARGS="$ARGS --project \"$VERCEL_PROJECT_ID\""
+          fi
+          if [ -n "$VERCEL_ORG_ID" ]; then
+            ARGS="$ARGS --scope \"$VERCEL_ORG_ID\""
+          fi
+          npx --yes vercel $ARGS
