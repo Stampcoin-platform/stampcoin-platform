@@ -6,8 +6,10 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
     - name: Checkout code
@@ -25,7 +27,21 @@ jobs:
     - name: Build
       run: npm run build
 
-    - name: Deploy to production
+    - name: Run tests
+      run: npm test
+
+  deploy-railway:
+    needs: [build-and-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy to Railway
       run: |
-        echo "Deploying to production..."
-        # Add your deployment commands here
+        echo "Deploying to Railway..."
+        # Add your Railway deployment commands here
