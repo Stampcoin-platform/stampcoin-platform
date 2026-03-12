@@ -1,261 +1,55 @@
-/* تنسيقات عامة */
+/* Stampcoin Platform Styles */
+
 :root {
     --primary-color: #4361ee;
-    --secondary-color: #3f37c9;
-    --accent-color: #7209b7;
-    --dark-color: #1a1a2e;
-    --light-color: #f8f9fa;
-    --success-color: #06ffa5;
-    --warning-color: #ffbe0b;
-    --danger-color: #fb5607;
-    --info-color: #4cc9f0;
-    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --secondary-color: #f72585;
+    --success-color: #06d6a0;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --dark-bg: #0f3460;
+    --light-bg: #f8f9fa;
 }
 
-body {
-    font-family: var(--font-family);
-    color: #333;
-    line-height: 1.6;
-    background-color: #f8f9fa;
+html, body {
+    scroll-behavior: smooth;
 }
 
-/* تنسيقات العناوين */
-h1, h2, h3, h4, h5, h6 {
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: var(--dark-color);
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 10px;
 }
 
-/* تنسيقات الأزرار */
-.btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
+::-webkit-scrollbar-track {
+    background: var(--light-bg);
 }
 
-.btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.btn-primary:hover {
-    background-color: var(--secondary-color);
-    border-color: var(--secondary-color);
-}
-
-/* تنسيقات البطل الرئيسي */
-.hero-section {
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    color: white;
-    padding: 100px 0;
-    border-radius: 0 0 50px 50px;
-    margin-bottom: 50px;
-}
-
-.hero-image {
-    position: relative;
-    overflow: hidden;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-/* تنسيقات المميزات */
-.feature-icon {
-    width: 80px;
-    height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(67, 97, 238, 0.1);
-    border-radius: 50%;
-    margin: 0 auto 20px;
-}
-
-.card {
-    border: none;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-/* تنسيقات النموذج */
-.form-control, .form-select {
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    padding: 0.75rem 1rem;
-    transition: border-color 0.3s ease;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
-}
-
-/* تنسيقات الجدول */
-.table {
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.table thead th {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-}
-
-/* تنسيقات التنقل */
-.navbar {
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 1rem 0;
-}
-
-.navbar-brand {
-    font-weight: 700;
-    font-size: 1.5rem;
-}
-
-.nav-link {
-    font-weight: 500;
-    margin: 0 0.5rem;
-    padding: 0.5rem 1rem !important;
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
     border-radius: 5px;
-    transition: all 0.3s ease;
 }
 
-.nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
 }
 
-/* تنسيقات النتائج */
-#transactionResult {
-    padding: 1rem;
-    border-radius: 8px;
-    margin-top: 1rem;
-}
-
-.alert {
-    border-radius: 8px;
-    border: none;
-}
-
-/* تنسيقات الرسوم المتحركة */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.fade-in {
-    animation: fadeIn 0.8s ease forwards;
-}
-
-/* تنسيقات الاستجابة */
+/* Responsive Design */
 @media (max-width: 768px) {
-    .hero-section {
-        padding: 50px 0;
+    .hero h1 {
+        font-size: 1.8rem;
     }
-
-    .display-4 {
-        font-size: 2rem;
+    
+    .feature-card {
+        margin-bottom: 1rem;
     }
-
-    .display-5 {
-        font-size: 1.5rem;
+    
+    .form-section {
+        padding: 1rem;
     }
 }
 
-/* تنسيقات شريط التقدم */
-.progress {
-    height: 8px;
-    border-radius: 4px;
-    overflow: hidden;
-    background-color: #e0e0e0;
-}
-
-.progress-bar {
-    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-}
-
-/* تنسيقات بطاقات المعاملات */
-.transaction-card {
-    border-left: 4px solid var(--primary-color);
-    margin-bottom: 1rem;
-    padding: 1rem;
-    border-radius: 0 8px 8px 0;
-    background-color: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-}
-
-.transaction-card:hover {
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-}
-
-.transaction-status {
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-.status-pending {
-    background-color: rgba(255, 190, 11, 0.1);
-    color: var(--warning-color);
-}
-
-.status-confirmed {
-    background-color: rgba(6, 255, 165, 0.1);
-    color: var(--success-color);
-}
-
-.status-failed {
-    background-color: rgba(251, 86, 7, 0.1);
-    color: var(--danger-color);
-}
-
-.status-cancelled {
-    background-color: rgba(108, 117, 125, 0.1);
-    color: #6c757d;
-}
-
-/* تنسيقات الشاشة الكاملة */
-.full-screen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f8f9fa;
-}
-
-/* تنسيقات الخطأ */
-.error-message {
-    color: var(--danger-color);
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-}
-
-/* تنسيقات التحميل */
-.loading {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
+/* Print Styles */
+@media print {
+    .navbar, .footer {
+        display: none;
+    }
 }

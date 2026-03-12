@@ -1,164 +1,309 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>توثيق واجهة برمجة التطبيقات - منصة ستامبكوين</title>
-    <meta name="description" content="توثيق تفصيلي لواجهة برمجة تطبيقات منصة ستامبكوين">
-    <meta name="keywords" content="ستامبكوين, API, توثيق, واجهة برمجة التطبيقات">
-
-    <!-- الأيقونات -->
-    <link rel="icon" href="../favicon.ico">
-
-    <!-- Bootstrap CSS -->
+    <title>Stampcoin Platform - Digital Stamps & Marketplace</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Prism.js for code highlighting -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="../css/style.css">
-
-    <!-- Custom Documentation CSS -->
+    <link rel="stylesheet" href="style.css">
     <style>
-        .doc-section {
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            border-radius: 10px;
-            background-color: white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #f72585;
+            --success-color: #06d6a0;
+            --dark-bg: #0f3460;
+            --light-bg: #f8f9fa;
         }
 
-        .doc-section h2 {
-            color: var(--primary-color);
+        * {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a2e 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .navbar {
+            background: rgba(15, 52, 96, 0.95) !important;
+            backdrop-filter: blur(10px);
             border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
+            padding: 1rem 0;
         }
 
-        .api-endpoint {
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            border-radius: 8px;
-            background-color: #f8f9fa;
-            border-left: 4px solid var(--primary-color);
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: var(--primary-color) !important;
         }
 
-        .method {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-right: 0.5rem;
+        .navbar-brand i {
+            color: var(--secondary-color);
         }
 
-        .method-get {
-            background-color: rgba(6, 165, 255, 0.1);
-            color: #0099ff;
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         }
 
-        .method-post {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: #28a745;
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        .method-put {
-            background-color: rgba(255, 193, 7, 0.1);
-            color: #ffc107;
+        .hero p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
         }
 
-        .method-delete {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
+        /* Cards */
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #eee;
         }
 
-        .sidebar {
-            position: sticky;
-            top: 20px;
-            height: calc(100vh - 40px);
-            overflow-y: auto;
-            background-color: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
         }
 
-        .sidebar .nav-link {
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            margin-bottom: 0.25rem;
-            color: #555;
-        }
-
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            background-color: rgba(67, 97, 238, 0.1);
+        .feature-card i {
+            font-size: 2.5rem;
             color: var(--primary-color);
-        }
-
-        .parameter {
             margin-bottom: 1rem;
         }
 
-        .parameter-name {
+        .feature-card h3 {
+            color: var(--dark-bg);
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        /* Form Section */
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 1rem;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3a0ca3 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
             font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Results Section */
+        .results-container {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .results-container.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-item {
+            background: var(--light-bg);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+        .result-item strong {
             color: var(--primary-color);
         }
 
-        .parameter-type {
-            background-color: #e9ecef;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            margin-right: 0.5rem;
+        /* Wallet Display */
+        .wallet-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
 
-        .response-example {
-            background-color: #2d2d2d;
-            color: #f8f8f2;
-            border-radius: 8px;
-            padding: 1rem;
-            overflow-x: auto;
+        .wallet-card h3 {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .wallet-card .balance {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        /* Tab Navigation */
+        .nav-tabs {
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 2rem;
+        }
+
+        .nav-tabs .nav-link {
+            color: #666;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background: none;
+        }
+
+        /* Table Styling */
+        .table {
             margin-top: 1rem;
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
+        .table thead {
+            background-color: var(--light-bg);
+        }
+
+        .table th {
+            color: var(--primary-color);
+            font-weight: 600;
+            border: none;
+            padding: 1rem;
+        }
+
+        .table td {
+            border: none;
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        /* Status Badge */
+        .badge-success {
+            background-color: var(--success-color);
+            padding: 0.5rem 1rem;
             border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-weight: 600;
         }
 
-        .status-success {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: #28a745;
+        /* Footer */
+        .footer {
+            background: rgba(15, 52, 96, 0.95);
+            color: white;
+            padding: 2rem;
+            margin-top: 4rem;
+            text-align: center;
+            border-top: 2px solid var(--primary-color);
         }
 
-        .status-error {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
+        /* Loading Spinner */
+        .loading {
+            display: none;
         }
 
-        @media (max-width: 992px) {
-            .sidebar {
-                position: relative;
-                height: auto;
-                margin-bottom: 2rem;
-            }
+        .loading.show {
+            display: inline-block;
+        }
+
+        /* Alert Messages */
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .alert-success {
+            background: rgba(6, 214, 160, 0.1);
+            color: var(--success-color);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .alert-danger {
+            background: rgba(247, 37, 133, 0.1);
+            color: var(--secondary-color);
+            border-left: 4px solid var(--secondary-color);
         }
     </style>
 </head>
 <body>
-    <!-- شريط التنقل -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <i class="fas fa-coins me-2"></i> توثيق API
+                <i class="fas fa-coins"></i> Stampcoin Platform
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -166,524 +311,288 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">الرئيسية</a>
+                        <a class="nav-link active" href="#wallet">Wallet</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#overview">نظرة عامة</a>
+                        <a class="nav-link" href="#marketplace">Marketplace</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#endpoints">نقاط النهاية</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#authentication">التصريح</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#examples">أمثلة</a>
+                        <a class="nav-link" href="#blockchain">Blockchain</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- المحتوى الرئيسي -->
+    <!-- Hero Section -->
     <div class="container my-5">
-        <div class="row">
-            <!-- الشريط الجانبي -->
-            <div class="col-lg-3">
-                <div class="sidebar">
-                    <h5 class="mb-3">محتويات التوثيق</h5>
-                    <nav class="nav flex-column">
-                        <a class="nav-link" href="#overview">نظرة عامة</a>
-                        <a class="nav-link" href="#authentication">التصريح</a>
-                        <a class="nav-link" href="#endpoints">نقاط النهاية</a>
-                        <a class="nav-link" href="#status">نقاط النهاية - الحالة</a>
-                        <a class="nav-link" href="#transactions">نقاط النهاية - المعاملات</a>
-                        <a class="nav-link" href="#examples">أمثلة</a>
-                        <a class="nav-link" href="#errors">أخطاء API</a>
-                        <a class="nav-link" href="#support">الدعم</a>
-                    </nav>
-                </div>
-            </div>
-
-            <!-- المحتوى الرئيسي -->
-            <div class="col-lg-9">
-                <!-- نظرة عامة -->
-                <section id="overview" class="doc-section">
-                    <h2>نظرة عامة</h2>
-                    <p>توفر منصة ستامبكوين واجهة برمجة تطبيقات (API) متكاملة تتيح للمطورين التكامل مع منصة المعاملات الرقمية. توفر API الوصول إلى جميع وظائف المنصة، بما في ذلك إنشاء المعاملات، والتحقق من حالتها، وإدارة المحفظة.</p>
-
-                    <h3>معلومات API</h3>
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>الميزة</th>
-                                    <th>الوصف</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>الإصدار</td>
-                                    <td>v2.0.0</td>
-                                </tr>
-                                <tr>
-                                    <td>النوع</td>
-                                    <td>RESTful</td>
-                                </tr>
-                                <tr>
-                                    <td>تنسيق البيانات</td>
-                                    <td>JSON</td>
-                                </tr>
-                                <tr>
-                                    <td>معدل الطلبات</td>
-                                    <td>100 طلب/دقيقة</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- التصريح -->
-                <section id="authentication" class="doc-section">
-                    <h2>التصريح</h2>
-                    <p>للوصول إلى API، يجب تضمين رمز وصول (API Key) في رأس الطلب. يمكن الحصول على رمز الوصول من لوحة تحكم المستخدم.</p>
-
-                    <h3>كيفية استخدام رمز الوصول</h3>
-                    <p>يجب تضمين رمز الوصول في رأس الطلب باسم <code>X-API-Key</code>:</p>
-
-                    <div class="response-example">
-                        <pre><code>curl -H "X-API-Key: YOUR_API_KEY"      -H "Content-Type: application/json"      -X POST https://api.ecostamp.net/api/transaction      -d '{"amount": 100, "currency": "STAMP", "recipient": "user123"}'</code></pre>
-                    </div>
-
-                    <h3>نطاق الصلاحيات</h3>
-                    <p>يتم منح رموز الوصول بمستويات صلاحيات مختلفة حسب نوع الحساب:</p>
-                    <ul>
-                        <li><strong>مستخدم عادي:</strong> إنشاء المعاملات فقط</li>
-                        <li><strong>مؤسسة:</strong> إنشاء المعاملات والتحقق من حالتها</li>
-                        <li><strong>مسؤول:</strong> جميع الوظائف</li>
-                    </ul>
-                </section>
-
-                <!-- نقاط النهاية -->
-                <section id="endpoints" class="doc-section">
-                    <h2>نقاط النهاية</h2>
-                    <p>توفر منصة ستامبكوين مجموعة من نقاط النهاية التي تتيح إدارة المعاملات والوصول إلى المعلومات.</p>
-
-                    <!-- نقاط النهاية - الحالة -->
-                    <section id="status" class="mt-4">
-                        <h3>نقاط النهاية - الحالة</h3>
-
-                        <div class="api-endpoint">
-                            <h4>الحصول على حالة الخادم</h4>
-                            <p class="mb-3"><span class="method method-get">GET</span> <code>/api/status</code></p>
-                            <p>يحصل على حالة الخادم الحالية.</p>
-
-                            <h5>الاستجابة الناجحة</h5>
-                            <div class="response-example">
-                                <pre><code>{
-  "success": true,
-  "status": "running",
-  "timestamp": "2023-05-15T12:34:56.789Z",
-  "version": "2.0.0",
-  "uptime": 12345
-}</code></pre>
-                            </div>
-                        </div>
-
-                        <div class="api-endpoint">
-                            <h4>التحقق من صحة النظام</h4>
-                            <p class="mb-3"><span class="method method-get">GET</span> <code>/api/health</code></p>
-                            <p>يحصل على صحة النظام واتصاله بقاعدة البيانات.</p>
-
-                            <h5>الاستجابة الناجحة</h5>
-                            <div class="response-example">
-                                <pre><code>{
-  "success": true,
-  "status": "healthy",
-  "timestamp": "2023-05-15T12:34:56.789Z",
-  "database": "connected"
-}</code></pre>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- نقاط النهاية - المعاملات -->
-                    <section id="transactions" class="mt-4">
-                        <h3>نقاط النهاية - المعاملات</h3>
-
-                        <div class="api-endpoint">
-                            <h4>إنشاء معاملة جديدة</h4>
-                            <p class="mb-3"><span class="method method-post">POST</span> <code>/api/transaction</code></p>
-                            <p>ينشئ معاملة جديدة في النظام.</p>
-
-                            <h5>البارامترات</h5>
-                            <div class="parameter">
-                                <span class="parameter-type">رقم</span>
-                                <span class="parameter-name">amount</span>
-                                <span>المبلغ المرسل (مطلوب)</span>
-                            </div>
-                            <div class="parameter">
-                                <span class="parameter-type">نص</span>
-                                <span class="parameter-name">currency</span>
-                                <span>رمز العملة (مطلوب)</span>
-                            </div>
-                            <div class="parameter">
-                                <span class="parameter-type">نص</span>
-                                <span class="parameter-name">recipient</span>
-                                <span>معرف المستلم (مطلوب)</span>
-                            </div>
-                            <div class="parameter">
-                                <span class="parameter-type">نص</span>
-                                <span class="parameter-name">sender</span>
-                                <span>معرف المرسل (مطلوب)</span>
-                            </div>
-                            <div class="parameter">
-                                <span class="parameter-type">نص</span>
-                                <span class="parameter-name">reference</span>
-                                <span>مرجع اختياري</span>
-                            </div>
-
-                            <h5>الاستجابة الناجحة</h5>
-                            <div class="response-example">
-                                <pre><code>{
-  "success": true,
-  "transaction": {
-    "id": "TX123456789",
-    "amount": 100,
-    "currency": "STAMP",
-    "recipient": "user123",
-    "sender": "user456",
-    "status": "pending",
-    "timestamp": "2023-05-15T12:34:56.789Z",
-    "reference": "REF123"
-  }
-}</code></pre>
-                            </div>
-                        </div>
-
-                        <div class="api-endpoint">
-                            <h4>الحصول على قائمة المعاملات</h4>
-                            <p class="mb-3"><span class="method method-get">GET</span> <code>/api/transactions</code></p>
-                            <p>يحصل على قائمة بالمعاملات مع التصفية والترقيم.</p>
-
-                            <h5>بارامترات الاستعلام</h5>
-                            <div class="parameter">
-                                <span class="parameter-type">رقم</span>
-                                <span class="parameter-name">limit</span>
-                                <span>الحد الأقصى للنتائج (الافتراضي: 10)</span>
-                            </div>
-                            <div class="parameter">
-                                <span class="parameter-type">رقم</span>
-                                <span class="parameter-name">offset</span>
-                                <span>الإزاحة (الافتراضي: 0)</span>
-                            </div>
-                            <div class="parameter">
-                                <span class="parameter-type">نص</span>
-                                <span class="parameter-name">status</span>
-                                <span>تصفية بالحالة</span>
-                            </div>
-                            <div class="parameter">
-                                <span class="parameter-type">نص</span>
-                                <span class="parameter-name">currency</span>
-                                <span>تصفيرة بالعملة</span>
-                            </div>
-
-                            <h5>الاستجابة الناجحة</h5>
-                            <div class="response-example">
-                                <pre><code>{
-  "success": true,
-  "transactions": [
-    {
-      "id": "TX123456789",
-      "amount": 100,
-      "currency": "STAMP",
-      "recipient": "user123",
-      "sender": "user456",
-      "status": "confirmed",
-      "timestamp": "2023-05-15T12:34:56.789Z"
-    },
-    {
-      "id": "TX987654321",
-      "amount": 50,
-      "currency": "USD",
-      "recipient": "user789",
-      "sender": "user456",
-      "status": "pending",
-      "timestamp": "2023-05-14T10:20:30.123Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 2
-  }
-}</code></pre>
-                            </div>
-                        </div>
-
-                        <div class="api-endpoint">
-                            <h4>الحصول على تفاصيل معاملة</h4>
-                            <p class="mb-3"><span class="method method-get">GET</span> <code>/api/transactions/:id</code></p>
-                            <p>يحصل على تفاصيل معاملة محددة باستخدام معرفها.</p>
-
-                            <h5>بارامترات المسار</h5>
-                            <div class="parameter">
-                                <span class="parameter-type">نص</span>
-                                <span class="parameter-name">id</span>
-                                <span>معرف المعاملة (مطلوب)</span>
-                            </div>
-
-                            <h5>الاستجابة الناجحة</h5>
-                            <div class="response-example">
-                                <pre><code>{
-  "success": true,
-  "transaction": {
-    "id": "TX123456789",
-    "amount": 100,
-    "currency": "STAMP",
-    "recipient": "user123",
-    "sender": "user456",
-    "status": "confirmed",
-    "timestamp": "2023-05-15T12:34:56.789Z",
-    "reference": "REF123",
-    "details": {
-      "confirmations": 6,
-      "created_at": "2023-05-15T12:34:56.789Z",
-      "confirmed_at": "2023-05-15T12:35:12.345Z"
-    }
-  }
-}</code></pre>
-                            </div>
-                        </div>
-
-                        <div class="api-endpoint">
-                            <h4>تحديث حالة معاملة</h4>
-                            <p class="mb-3"><span class="method method-put">PUT</span> <code>/api/transactions/:id/status</code></p>
-                            <p>يحدث حالة معاملة محددة.</p>
-
-                            <h5>بارامترات المسار</h5>
-                            <div class="parameter">
-                                <span class="parameter-type">نص</span>
-                                <span class="parameter-name">id</span>
-                                <span>معرف المعاملة (مطلوب)</span>
-                            </div>
-
-                            <h5>بارامترات الطلب</h5>
-                            <div class="parameter">
-                                <span class="parameter-type">نص</span>
-                                <span class="parameter-name">status</span>
-                                <span>الحالة الجديدة (مطلوب)</span>
-                            </div>
-                            <div class="parameter">
-                                <span class="parameter-type">كائن</span>
-                                <span class="parameter-name">details</span>
-                                <span>تفاصيل إضافية اختيارية</span>
-                            </div>
-
-                            <h5>الاستجابة الناجحة</h5>
-                            <div class="response-example">
-                                <pre><code>{
-  "success": true,
-  "transaction": {
-    "id": "TX123456789",
-    "amount": 100,
-    "currency": "STAMP",
-    "recipient": "user123",
-    "sender": "user456",
-    "status": "confirmed",
-    "timestamp": "2023-05-15T12:34:56.789Z",
-    "details": {
-      "confirmations": 6,
-      "created_at": "2023-05-15T12:34:56.789Z",
-      "confirmed_at": "2023-05-15T12:35:12.345Z"
-    }
-  }
-}</code></pre>
-                            </div>
-                        </div>
-                    </section>
-                </section>
-
-                <!-- أمثلة -->
-                <section id="examples" class="doc-section">
-                    <h2>أمثلة</h2>
-
-                    <h3>إنشاء معاملة باستخدام cURL</h3>
-                    <div class="response-example">
-                        <pre><code>curl -X POST https://api.ecostamp.net/api/transaction      -H "Content-Type: application/json"      -H "X-API-Key: YOUR_API_KEY"      -d '{
-       "amount": 100,
-       "currency": "STAMP",
-       "recipient": "user123",
-       "sender": "user456",
-       "reference": "REF123"
-     }'</code></pre>
-                    </div>
-
-                    <h3>الحصول على قائمة المعاملات باستخدام JavaScript</h3>
-                    <div class="response-example">
-                        <pre><code>const response = await fetch('https://api.ecostamp.net/api/transactions', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-API-Key': 'YOUR_API_KEY'
-  }
-});
-
-const data = await response.json();
-if (data.success) {
-  console.log('Transactions:', data.transactions);
-} else {
-  console.error('Error:', data.error);
-}</code></pre>
-                    </div>
-
-                    <h3>تحديث حالة معاملة باستخدام Python</h3>
-                    <div class="response-example">
-                        <pre><code>import requests
-
-url = 'https://api.ecostamp.net/api/transactions/TX123456789/status'
-headers = {
-    'Content-Type': 'application/json',
-    'X-API-Key': 'YOUR_API_KEY'
-}
-data = {
-    'status': 'confirmed',
-    'details': {
-        'confirmations': 6,
-        'confirmed_at': '2023-05-15T12:35:12.345Z'
-    }
-}
-
-response = requests.put(url, json=data, headers=headers)
-result = response.json()
-
-if result['success']:
-    print('Transaction updated successfully')
-else:
-    print('Error:', result['error'])</code></pre>
-                    </div>
-                </section>
-
-                <!-- أخطاء API -->
-                <section id="errors" class="doc-section">
-                    <h2>أخطاء API</h2>
-                    <p>عندما يفشل الطلب، يعيد API كائن خطأ يحتوي على معلومات حول المشكلة.</p>
-
-                    <h3>هيكل الخطأ</h3>
-                    <div class="response-example">
-                        <pre><code>{
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Error description",
-    "details": "Additional error details"
-  },
-  "timestamp": "2023-05-15T12:34:56.789Z"
-}</code></pre>
-                    </div>
-
-                    <h3>أخطاء شائعة</h3>
-                    <div class="api-endpoint">
-                        <h4>خطأ في المصادقة</h4>
-                        <p><strong>الرمز:</strong> AUTH_ERROR</p>
-                        <p><strong>الحالة:</strong> 401 Unauthorized</p>
-                        <p><strong>الوصف:</strong> رمز الوصول غير صالح أو منتهي الصلاحية</p>
-                    </div>
-
-                    <div class="api-endpoint">
-                        <h4>صلاحيات غير كافية</h4>
-                        <p><strong>الرمز:</strong> INSUFFICIENT_PERMISSIONS</p>
-                        <p><strong>الحالة:</strong> 403 Forbidden</p>
-                        <p><strong>الوصف:</strong> ليس لديك الصلاحية لإجراء هذا الطلب</p>
-                    </div>
-
-                    <div class="api-endpoint">
-                        <h4>معاملات غير صالحة</h4>
-                        <p><strong>الرمز:</strong> INVALID_PARAMETERS</p>
-                        <p><strong>الحالة:</strong> 400 Bad Request</p>
-                        <p><strong>الوصف:</strong> أحد بارامترات الطلب غير صالح</p>
-                    </div>
-
-                    <div class="api-endpoint">
-                        <h4>المعاملة غير موجودة</h4>
-                        <p><strong>الرمز:</strong> TRANSACTION_NOT_FOUND</p>
-                        <p><strong>الحالة:</strong> 404 Not Found</p>
-                        <p><strong>الوصف:</strong> المعاملة المطلوبة غير موجودة</p>
-                    </div>
-                </section>
-
-                <!-- الدعم -->
-                <section id="support" class="doc-section">
-                    <h2>الدعم</h2>
-                    <p>إذا واجهت أي مشاكل أو كان لديك أسئلة حول API، يمكنك التواصل مع فريق الدعم لدينا:</p>
-
-                    <ul>
-                        <li><strong>البريد الإلكتروني:</strong> <a href="mailto:api-support@ecostamp.net">api-support@ecostamp.net</a></li>
-                        <li><strong>الدردشة المباشرة:</a> متاحة في لوحة تحكم المستخدم</li>
-                        <li><strong>توثيق إضافي:</a> <a href="#">مركز المطورين</a></li>
-                        <li><strong>تتبع المشاكل:</a> <a href="#">GitHub Issues</a></li>
-                    </ul>
-
-                    <div class="alert alert-info mt-3">
-                        <i class="fas fa-info-circle me-2"></i>
-                        نحن نعمل باستمرار على تحسين API. تابع <a href="#">ملاحظات الإصدار</a> لأحدث التحديثات والتغييرات.
-                    </div>
-                </section>
-            </div>
+        <div class="hero">
+            <h1><i class="fas fa-stamp"></i> Stampcoin Platform</h1>
+            <p>Blockchain-powered digital stamps, wallet and marketplace</p>
+            <p style="font-size: 0.9rem; opacity: 0.9;">v2.0.0 | Live & Production Ready</p>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Features -->
+        <div class="row mb-5">
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <i class="fas fa-wallet"></i>
+                    <h3>Digital Wallet</h3>
+                    <p>Create and manage your digital wallet with instant transfers</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <i class="fas fa-store"></i>
+                    <h3>Marketplace</h3>
+                    <p>Buy and sell digital stamps and collectibles</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <i class="fas fa-cube"></i>
+                    <h3>Blockchain</h3>
+                    <p>STP token on BNB Smart Chain (BEP-20)</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Secure</h3>
+                    <p>Military-grade encryption and authentication</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wallet Section -->
+        <div id="wallet" class="form-section">
+            <h2><i class="fas fa-wallet"></i> Wallet Management</h2>
+            
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#create-wallet">Create Wallet</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#view-wallet">View Wallet</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#transfer">Transfer</button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Create Wallet -->
+                <div class="tab-pane fade show active" id="create-wallet">
+                    <form id="createWalletForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">User ID</label>
+                                <input type="text" class="form-control" id="userId" placeholder="user123" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">User Name</label>
+                                <input type="text" class="form-control" id="userName" placeholder="Alice" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus"></i> Create Wallet
+                        </button>
+                    </form>
+                    <div id="createWalletResult" class="results-container"></div>
+                </div>
+
+                <!-- View Wallet -->
+                <div class="tab-pane fade" id="view-wallet">
+                    <form id="viewWalletForm">
+                        <div class="mb-3">
+                            <label class="form-label">User ID</label>
+                            <input type="text" class="form-control" id="viewUserId" placeholder="user123" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-eye"></i> View Wallet
+                        </button>
+                    </form>
+                    <div id="viewWalletResult" class="results-container"></div>
+                </div>
+
+                <!-- Transfer -->
+                <div class="tab-pane fade" id="transfer">
+                    <form id="transferForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">From User ID</label>
+                                <input type="text" class="form-control" id="fromUserId" placeholder="user1" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">To User ID</label>
+                                <input type="text" class="form-control" id="toUserId" placeholder="user2" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Amount</label>
+                                <input type="number" class="form-control" id="transferAmount" placeholder="100" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">
+                            <i class="fas fa-exchange-alt"></i> Transfer
+                        </button>
+                    </form>
+                    <div id="transferResult" class="results-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Marketplace Section -->
+        <div id="marketplace" class="form-section">
+            <h2><i class="fas fa-store"></i> Marketplace</h2>
+            
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#list-item">List Item</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#view-items">View Items</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#buy-item">Buy Item</button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- List Item -->
+                <div class="tab-pane fade show active" id="list-item">
+                    <form id="listItemForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Seller ID</label>
+                                <input type="text" class="form-control" id="sellerId" placeholder="seller123" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Item Name</label>
+                                <input type="text" class="form-control" id="itemName" placeholder="Digital Stamp #001" required>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Price</label>
+                                <input type="number" class="form-control" id="itemPrice" placeholder="100" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Type</label>
+                                <input type="text" class="form-control" id="itemType" placeholder="stamp" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">
+                            <i class="fas fa-arrow-up"></i> List Item
+                        </button>
+                    </form>
+                    <div id="listItemResult" class="results-container"></div>
+                </div>
+
+                <!-- View Items -->
+                <div class="tab-pane fade" id="view-items">
+                    <button class="btn btn-primary" id="viewItemsBtn">
+                        <i class="fas fa-eye"></i> Load Market Items
+                    </button>
+                    <div id="viewItemsResult" class="results-container"></div>
+                </div>
+
+                <!-- Buy Item -->
+                <div class="tab-pane fade" id="buy-item">
+                    <form id="buyItemForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Item ID</label>
+                                <input type="text" class="form-control" id="buyItemId" placeholder="item_..." required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Buyer ID</label>
+                                <input type="text" class="form-control" id="buyerId" placeholder="buyer123" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">
+                            <i class="fas fa-shopping-cart"></i> Buy Item
+                        </button>
+                    </form>
+                    <div id="buyItemResult" class="results-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Blockchain Section -->
+        <div id="blockchain" class="form-section">
+            <h2><i class="fas fa-cube"></i> Blockchain & Token</h2>
+            
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#token-info">Token Info</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#blockchain-info">Blockchain Info</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#token-balance">Check Balance</button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Token Info -->
+                <div class="tab-pane fade show active" id="token-info">
+                    <button class="btn btn-primary" id="getTokenBtn">
+                        <i class="fas fa-info-circle"></i> Get Token Info
+                    </button>
+                    <div id="tokenResult" class="results-container"></div>
+                </div>
+
+                <!-- Blockchain Info -->
+                <div class="tab-pane fade" id="blockchain-info">
+                    <button class="btn btn-primary" id="getBlockchainBtn">
+                        <i class="fas fa-info-circle"></i> Get Blockchain Info
+                    </button>
+                    <div id="blockchainResult" class="results-container"></div>
+                </div>
+
+                <!-- Check Balance -->
+                <div class="tab-pane fade" id="token-balance">
+                    <form id="balanceForm">
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <input type="text" class="form-control" id="balanceAddress" placeholder="user123" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-coins"></i> Check Balance
+                        </button>
+                    </form>
+                    <div id="balanceResult" class="results-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Status -->
+        <div class="form-section mt-5">
+            <h2><i class="fas fa-heartbeat"></i> API Status</h2>
+            <button class="btn btn-primary" id="healthBtn">
+                <i class="fas fa-check"></i> Check Health
+            </button>
+            <div id="healthResult" class="results-container"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p><strong>Stampcoin Platform v2.0</strong></p>
+        <p>Blockchain-powered digital stamps and marketplace</p>
+        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
+            <i class="fas fa-globe"></i> https://stampcoin-platform.fly.dev
+        </p>
+        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
+            © 2024 Stampcoin Team | <a href="https://github.com/zedanazad43/stampcoin-platform" style="color: var(--primary-color); text-decoration: none;">GitHub</a>
+        </p>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Prism.js for code highlighting -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-
-    <!-- Custom JS -->
-    <script src="../js/app.js"></script>
-
-    <!-- Documentation JS -->
-    <script>
-        // تفعيل التنقل السلس
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-
-        // تحديث النشاط في الشريط الجانبي
-        window.addEventListener('scroll', () => {
-            const sections = document.querySelectorAll('section[id]');
-            const navLinks = document.querySelectorAll('.sidebar .nav-link');
-
-            let current = '';
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop;
-                const sectionHeight = section.clientHeight;
-                if (scrollY >= sectionTop - 200) {
-                    current = section.getAttribute('id');
-                }
-            });
-
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href').substring(1) === current) {
-                    link.classList.add('active');
-                }
-            });
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>

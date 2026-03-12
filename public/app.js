@@ -1,270 +1,253 @@
-/**
- * تطبيق الواجهة الأمامية لمنصة ستامبكوين
- * يتعامل مع واجهة برمجة التطبيقات ويوفر تجربة مستخدم تفاعلية
- */
+// Stampcoin Platform Frontend
+// Production ready interactive dashboard
 
-document.addEventListener('DOMContentLoaded', function() {
-    // تهيئات التطبيق
-    const API_BASE_URL = '/api';
+const API_BASE = '/';
 
-    // معالج نموذج المعاملات
-    const transactionForm = document.getElementById('transactionForm');
-    if (transactionForm) {
-        transactionForm.addEventListener('submit', handleTransactionSubmit);
+// Utility function to display results
+function showResult(containerId, data, isError = false) {
+    const container = document.getElementById(containerId);
+    if (!data) return;
+
+    container.classList.add('show');
+    
+    let html = '';
+    if (isError) {
+        html = `<div class="alert alert-danger"><strong>Error:</strong> ${data.message || data.error || JSON.stringify(data)}</div>`;
+    } else {
+        html = `<div class="alert alert-success"><strong>Success!</strong></div>`;
+        html += `<pre style="background: #f8f9fa; padding: 1rem; border-radius: 8px; overflow-x: auto;">`;
+        html += JSON.stringify(data, null, 2);
+        html += `</pre>`;
     }
+    
+    container.innerHTML = html;
+}
 
-    // معالج نموذج الاتصال
-    const contactForm = document.getElementById('contactForm');
-    if (contactForm) {
-        contactForm.addEventListener('submit', handleContactSubmit);
+// ===== WALLET SECTION =====
+
+// Create Wallet
+document.getElementById('createWalletForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const userId = document.getElementById('userId').value;
+    const userName = document.getElementById('userName').value;
+    
+    try {
+        const response = await fetch(`${API_BASE}api/wallet/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, userName })
+        });
+        
+        const data = await response.json();
+        showResult('createWalletResult', data, !response.ok);
+        
+        if (response.ok) {
+            document.getElementById('createWalletForm').reset();
+        }
+    } catch (error) {
+        showResult('createWalletResult', { error: error.message }, true);
     }
-
-    // التحقق من حالة الخادم عند تحميل الصفحة
-    checkServerStatus();
 });
 
-/**
- * التحقق من حالة الخادم
- */
-async function checkServerStatus() {
+// View Wallet
+document.getElementById('viewWalletForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const userId = document.getElementById('viewUserId').value;
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/status`);
+        const response = await fetch(`${API_BASE}api/wallet/${userId}`);
         const data = await response.json();
-
-        if (data.success && data.status === 'running') {
-            showNotification('الخادم يعمل بشكل طبيعي', 'success');
-        } else {
-            showNotification('قد يكون هناك مشكلة في الخادم', 'warning');
-        }
+        showResult('viewWalletResult', data, !response.ok);
     } catch (error) {
-        console.error('Error checking server status:', error);
-        showNotification('غير قادر على الاتصال بالخادم', 'danger');
+        showResult('viewWalletResult', { error: error.message }, true);
     }
-}
+});
 
-/**
- * معالجة إرسال نموذج المعاملات
- */
-async function handleTransactionSubmit(event) {
-    event.preventDefault();
-
-    // جمع البيانات من النموذج
-    const formData = {
-        amount: document.getElementById('amount').value,
-        currency: document.getElementById('currency').value,
-        recipient: document.getElementById('recipient').value,
-        sender: document.getElementById('sender').value
-    };
-
-    // إظهار مؤشر التحميل
-    const submitButton = event.target.querySelector('button[type="submit"]');
-    const originalButtonText = submitButton.innerHTML;
-    submitButton.innerHTML = '<span class="loading me-2"></span> جاري المعالجة...';
-    submitButton.disabled = true;
-
+// Transfer Funds
+document.getElementById('transferForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const fromUserId = document.getElementById('fromUserId').value;
+    const toUserId = document.getElementById('toUserId').value;
+    const amount = parseInt(document.getElementById('transferAmount').value);
+    
     try {
-        // إرسال الطلب إلى الخادم
-        const response = await fetch(`${API_BASE_URL}/transaction`, {
+        const response = await fetch(`${API_BASE}api/wallet/transfer`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fromUserId, toUserId, amount })
         });
-
+        
         const data = await response.json();
-
-        // عرض النتيجة
-        const resultDiv = document.getElementById('transactionResult');
-        if (data.success) {
-            resultDiv.innerHTML = `
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle me-2"></i>
-                    تم إنشاء المعاملات بنجاح!
-                    <br>
-                    <strong>معرف المعاملة:</strong> ${data.transaction.id}
-                </div>
-            `;
-            // إعادة تعيين النموذج
-            event.target.reset();
-        } else {
-            resultDiv.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    فشل إنشاء المعاملة: ${data.error || 'خطأ غير معروف'}
-                </div>
-            `;
+        showResult('transferResult', data, !response.ok);
+        
+        if (response.ok) {
+            document.getElementById('transferForm').reset();
         }
     } catch (error) {
-        console.error('Error creating transaction:', error);
-        const resultDiv = document.getElementById('transactionResult');
-        resultDiv.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.
-            </div>
-        `;
-    } finally {
-        // استعادة زر الإرسال
-        submitButton.innerHTML = originalButtonText;
-        submitButton.disabled = false;
+        showResult('transferResult', { error: error.message }, true);
     }
-}
+});
 
-/**
- * معالجة إرسال نموذج الاتصال
- */
-async function handleContactSubmit(event) {
-    event.preventDefault();
+// ===== MARKETPLACE SECTION =====
 
-    // جمع البيانات من النموذج
-    const formData = {
-        name: document.getElementById('name').value,
-        email: document.getElementById('email').value,
-        subject: document.getElementById('subject').value,
-        message: document.getElementById('message').value
-    };
-
-    // إظهار مؤشر التحميل
-    const submitButton = event.target.querySelector('button[type="submit"]');
-    const originalButtonText = submitButton.innerHTML;
-    submitButton.innerHTML = '<span class="loading me-2"></span> جاري الإرسال...';
-    submitButton.disabled = true;
-
+// List Item
+document.getElementById('listItemForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const sellerId = document.getElementById('sellerId').value;
+    const name = document.getElementById('itemName').value;
+    const price = parseInt(document.getElementById('itemPrice').value);
+    const type = document.getElementById('itemType').value;
+    
     try {
-        // في تطبيق حقيقي، سيتم إرسال البيانات إلى خادم هنا
-        console.log('Contact form data:', formData);
-
-        // عرض رسالة نجاح
-        const resultDiv = document.getElementById('contactResult');
-        resultDiv.innerHTML = `
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle me-2"></i>
-                شكراً لتواصلك معنا! سنرد عليك في أقرب وقت ممكن.
-            </div>
-        `;
-
-        // إعادة تعيين النموذج
-        event.target.reset();
+        const response = await fetch(`${API_BASE}api/market/items`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sellerId, name, price, type })
+        });
+        
+        const data = await response.json();
+        showResult('listItemResult', data, !response.ok);
+        
+        if (response.ok) {
+            document.getElementById('listItemForm').reset();
+        }
     } catch (error) {
-        console.error('Error submitting contact form:', error);
-        const resultDiv = document.getElementById('contactResult');
-        resultDiv.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.
-            </div>
-        `;
-    } finally {
-        // استعادة زر الإرسال
-        submitButton.innerHTML = originalButtonText;
-        submitButton.disabled = false;
+        showResult('listItemResult', { error: error.message }, true);
     }
-}
+});
 
-/**
- * عرض إشعار للمستخدم
- */
-function showNotification(message, type = 'info') {
-    // إنشاء عنصر الإشعار
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.zIndex = '9999';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+// View Items
+document.getElementById('viewItemsBtn')?.addEventListener('click', async () => {
+    try {
+        const response = await fetch(`${API_BASE}api/market/items`);
+        const data = await response.json();
+        
+        const container = document.getElementById('viewItemsResult');
+        container.classList.add('show');
+        
+        if (Array.isArray(data) && data.length > 0) {
+            let html = '<div class="alert alert-success mb-3">Found ' + data.length + ' items</div>';
+            html += '<table class="table"><thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Type</th><th>Status</th></tr></thead><tbody>';
+            
+            data.forEach(item => {
+                html += `<tr>
+                    <td>${item.id}</td>
+                    <td>${item.name}</td>
+                    <td>${item.price}</td>
+                    <td>${item.type}</td>
+                    <td><span class="badge badge-success">${item.status}</span></td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="alert alert-info">No items in marketplace</div>';
+        }
+    } catch (error) {
+        showResult('viewItemsResult', { error: error.message }, true);
+    }
+});
 
-    // إضافة الإشعار إلى الصفحة
-    document.body.appendChild(notification);
+// Buy Item
+document.getElementById('buyItemForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const itemId = document.getElementById('buyItemId').value;
+    const buyerId = document.getElementById('buyerId').value;
+    
+    try {
+        const response = await fetch(`${API_BASE}api/market/items/${itemId}/buy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ buyerId })
+        });
+        
+        const data = await response.json();
+        showResult('buyItemResult', data, !response.ok);
+        
+        if (response.ok) {
+            document.getElementById('buyItemForm').reset();
+        }
+    } catch (error) {
+        showResult('buyItemResult', { error: error.message }, true);
+    }
+});
 
-    // إغلاق الإشعار بعد 5 ثواني
+// ===== BLOCKCHAIN SECTION =====
+
+// Get Token Info
+document.getElementById('getTokenBtn')?.addEventListener('click', async () => {
+    try {
+        const response = await fetch(`${API_BASE}api/token`);
+        const data = await response.json();
+        showResult('tokenResult', data, !response.ok);
+    } catch (error) {
+        showResult('tokenResult', { error: error.message }, true);
+    }
+});
+
+// Get Blockchain Info
+document.getElementById('getBlockchainBtn')?.addEventListener('click', async () => {
+    try {
+        const response = await fetch(`${API_BASE}api/blockchain/info`);
+        const data = await response.json();
+        showResult('blockchainResult', data, !response.ok);
+    } catch (error) {
+        showResult('blockchainResult', { error: error.message }, true);
+    }
+});
+
+// Check Balance
+document.getElementById('balanceForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const address = document.getElementById('balanceAddress').value;
+    
+    try {
+        const response = await fetch(`${API_BASE}api/blockchain/balance/${address}`);
+        const data = await response.json();
+        showResult('balanceResult', data, !response.ok);
+    } catch (error) {
+        showResult('balanceResult', { error: error.message }, true);
+    }
+});
+
+// ===== HEALTH CHECK =====
+
+document.getElementById('healthBtn')?.addEventListener('click', async () => {
+    try {
+        const response = await fetch(`${API_BASE}health`);
+        const data = await response.json();
+        
+        const container = document.getElementById('healthResult');
+        container.classList.add('show');
+        
+        let html = '<div class="alert alert-success"><strong>✓ System is Healthy!</strong></div>';
+        html += '<table class="table"><tbody>';
+        html += `<tr><td><strong>Status</strong></td><td>${data.status}</td></tr>`;
+        html += `<tr><td><strong>Service</strong></td><td>${data.service}</td></tr>`;
+        html += `<tr><td><strong>Version</strong></td><td>${data.version}</td></tr>`;
+        html += `<tr><td><strong>Timestamp</strong></td><td>${new Date(data.timestamp).toLocaleString()}</td></tr>`;
+        html += '</tbody></table>';
+        
+        container.innerHTML = html;
+    } catch (error) {
+        showResult('healthResult', { error: error.message }, true);
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('✓ Stampcoin Platform loaded');
+    console.log('✓ API Base:', API_BASE);
+    
+    // Auto-check health on load
     setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }, 5000);
-}
-
-/**
- * تنسيق التاريخ
- */
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleString('ar-SA', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-/**
- * الحصول على حالة المعاملة باللغة العربية
- */
-function getTransactionStatus(status) {
-    const statusMap = {
-        'created': 'تم الإنشاء',
-        'pending': 'قيد الانتظار',
-        'confirmed': 'مؤكد',
-        'failed': 'فشل',
-        'cancelled': 'ملغى'
-    };
-    return statusMap[status] || status;
-}
-
-/**
- * عرض قائمة المعاملات
- */
-async function displayTransactions() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/transactions`);
-        const data = await response.json();
-
-        if (data.success && data.transactions.length > 0) {
-            const transactionsHtml = data.transactions.map(transaction => `
-                <div class="transaction-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h5 class="mb-1">المعاملة #${transaction.id}</h5>
-                            <p class="mb-1">
-                                <strong>المبلغ:</strong> ${transaction.amount} ${transaction.currency}
-                            </p>
-                            <p class="mb-1">
-                                <strong>المرسل:</strong> ${transaction.sender} | 
-                                <strong>المستلم:</strong> ${transaction.recipient}
-                            </p>
-                            <p class="mb-0">
-                                <strong>التاريخ:</strong> ${formatDate(transaction.timestamp)}
-                            </p>
-                        </div>
-                        <span class="transaction-status status-${transaction.status}">
-                            ${getTransactionStatus(transaction.status)}
-                        </span>
-                    </div>
-                </div>
-            `).join('');
-
-            document.getElementById('transactionsList').innerHTML = transactionsHtml;
-        } else {
-            document.getElementById('transactionsList').innerHTML = `
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    لا توجد معاملات
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Error fetching transactions:', error);
-        document.getElementById('transactionsList').innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                غير قادر على جلب المعاملات. يرجى المحاولة مرة أخرى.
-            </div>
-        `;
-    }
-}
+        document.getElementById('healthBtn')?.click();
+    }, 500);
+});
