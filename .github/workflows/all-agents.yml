@@ -1,0 +1,162 @@
+# Combined GitHub Actions Workflows for Stampcoin Platform
+# This file consolidates all CI/CD agents into a single workflow file.
+
+name: Stampcoin Platform — All Agents
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: stampcoin-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ──────────────────────────────────────────────
+  # 1. Copilot Setup Steps
+  # ──────────────────────────────────────────────
+  copilot-setup-steps:
+    name: Copilot Setup Steps
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install project dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f package.json ]; then
+            npm install
+          fi
+
+      - name: Copilot setup complete
+        run: echo "Copilot setup steps completed!"
+
+  # ──────────────────────────────────────────────
+  # 2. Build and Test
+  # ──────────────────────────────────────────────
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify lockfile is up-to-date
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          if ! git diff --exit-code package-lock.json; then
+            echo "package-lock.json is out of sync with package.json."
+            echo "Run 'npm install' locally and commit the updated lockfile."
+            exit 1
+          fi
+
+      - name: Run tests
+        run: npm test
+
+  # ──────────────────────────────────────────────
+  # 3. CodeQL Security Analysis
+  # ──────────────────────────────────────────────
+  codeql:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # ──────────────────────────────────────────────
+  # 4. Deploy to Railway
+  # ──────────────────────────────────────────────
+  deploy-railway:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check Railway token
+        id: check-railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "RAILWAY_TOKEN is not configured, skipping deployment."
+          fi
+
+      - name: Deploy to Railway
+        if: steps.check-railway.outputs.deploy == 'true'
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: ${{ secrets.RAILWAY_ENVIRONMENT }}
+        run: |
+          npm install -g @railway/cli
+
+          EXTRA_ARGS=()
+          if [ -n "$RAILWAY_SERVICE_ID" ]; then
+            EXTRA_ARGS+=(--service "$RAILWAY_SERVICE_ID")
+          fi
+          if [ -n "$RAILWAY_PROJECT_ID" ]; then
+            EXTRA_ARGS+=(--project "$RAILWAY_PROJECT_ID")
+          fi
+          if [ -n "$RAILWAY_ENVIRONMENT" ]; then
+            EXTRA_ARGS+=(--environment "$RAILWAY_ENVIRONMENT")
+          fi
+
+          railway up "${EXTRA_ARGS[@]}" --detach
