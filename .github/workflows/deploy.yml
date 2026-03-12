@@ -1,10 +1,15 @@
 name: Build, Test & Deploy
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+
+permissions:
+  contents: read
+  packages: write
 
 env:
   REGISTRY: ghcr.io
@@ -38,8 +43,7 @@ jobs:
   build-docker:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    continue-on-error: true
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     
     permissions:
       contents: read
@@ -81,9 +85,9 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-fly:
-    needs: build-and-test
+    needs: build-docker
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     
     steps:
       - uses: actions/checkout@v4
@@ -99,7 +103,7 @@ jobs:
   deploy-render:
     needs: build-docker
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     
     steps:
       - name: Trigger Render deployment
