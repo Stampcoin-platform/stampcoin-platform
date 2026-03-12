@@ -678,6 +678,45 @@
                         <p>Connect MetaMask, detect chain, and prepare STC interactions on EVM networks.</p>
                         <button class="button button-primary" id="connectWeb3Btn" type="button">Connect wallet</button>
                         <div class="result-panel" id="web3Result"></div>
+
+                        <form id="stcBalanceForm" class="stack-form" style="margin-top:12px;">
+                            <label>
+                                <span>Address for STC balance</span>
+                                <input id="web3BalanceAddress" placeholder="0x... (leave empty to use connected wallet)">
+                            </label>
+                            <button class="button button-secondary" id="getStcBalanceBtn" type="submit">Get STC balance</button>
+                        </form>
+                        <div class="result-panel" id="web3BalanceResult"></div>
+
+                        <form id="approveStcForm" class="stack-form" style="margin-top:12px;">
+                            <label>
+                                <span>Spender address</span>
+                                <input id="approveSpender" placeholder="0x..." required>
+                            </label>
+                            <label>
+                                <span>Amount (STC)</span>
+                                <input id="approveAmount" type="number" min="0" step="0.000001" placeholder="100" required>
+                            </label>
+                            <button class="button button-secondary" type="submit">Approve STC</button>
+                        </form>
+                        <div class="result-panel" id="approveResult"></div>
+
+                        <form id="mintOnchainForm" class="stack-form" style="margin-top:12px;">
+                            <label>
+                                <span>Recipient address</span>
+                                <input id="mintToAddress" placeholder="0x..." required>
+                            </label>
+                            <label>
+                                <span>Metadata URI</span>
+                                <input id="mintMetadataUri" placeholder="ipfs://..." required>
+                            </label>
+                            <label>
+                                <span>Mint fee override (ETH, optional)</span>
+                                <input id="mintFeeEth" type="number" min="0" step="0.0000001" placeholder="leave empty to read contract fee">
+                            </label>
+                            <button class="button button-primary" type="submit">Mint NFT on-chain</button>
+                        </form>
+                        <div class="result-panel" id="mintOnchainResult"></div>
                     </section>
                 </div>
             </section>

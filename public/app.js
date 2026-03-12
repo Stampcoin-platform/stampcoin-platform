@@ -271,6 +271,15 @@ function registerSubmit(formId, handler) {
 
 document.addEventListener("DOMContentLoaded", () => {
     const communityPosts = [];
+    const web3State = {
+        provider: null,
+        signer: null,
+        address: null,
+        config: null,
+        stc: null,
+        nft: null,
+        stcDecimals: 18
+    };
 
     function renderCommunityFeed() {
         const feed = document.getElementById("communityFeed");
@@ -328,6 +337,20 @@ document.addEventListener("DOMContentLoaded", () => {
             return "Please provide transaction ID, user ID, and timestamp. I can guide recovery and escalation steps.";
         }
         return "I can help with wallet operations, NFT minting, purchases, trading flow, and p2p escrow safety checks.";
+    }
+
+    async function loadAbi(contractName) {
+        const response = await fetch(apiPath(`abi/${contractName}.abi.json`));
+        if (!response.ok) {
+            throw new Error(`ABI not found for ${contractName}`);
+        }
+        return response.json();
+    }
+
+    function ensureWeb3Contracts() {
+        if (!web3State.signer || !web3State.stc || !web3State.nft) {
+            throw new Error("Connect Web3 wallet first.");
+        }
     }
 
     registerSubmit("createWalletForm", async event => {
@@ -739,6 +762,41 @@ document.addEventListener("DOMContentLoaded", () => {
             const address = await signer.getAddress();
             const network = await provider.getNetwork();
 
+            if (!window.ethers.utils.isAddress(config.stcContractAddress) || !window.ethers.utils.isAddress(config.nftContractAddress)) {
+                throw new Error("Invalid STC/NFT contract addresses in backend config.");
+            }
+
+            const [stcAbi, nftAbi] = await Promise.all([
+                loadAbi("StampCoinToken"),
+                loadAbi("StampNFT")
+            ]);
+
+            const [stcCode, nftCode] = await Promise.all([
+                provider.getCode(config.stcContractAddress),
+                provider.getCode(config.nftContractAddress)
+            ]);
+            if (stcCode === "0x" || nftCode === "0x") {
+                throw new Error("Configured contract addresses are not deployed on the connected network yet.");
+            }
+
+            const stc = new window.ethers.Contract(config.stcContractAddress, stcAbi, signer);
+            const nft = new window.ethers.Contract(config.nftContractAddress, nftAbi, signer);
+
+            let stcDecimals = 18;
+            try {
+                stcDecimals = Number(await stc.decimals());
+            } catch {
+                stcDecimals = 18;
+            }
+
+            web3State.provider = provider;
+            web3State.signer = signer;
+            web3State.address = address;
+            web3State.config = config;
+            web3State.stc = stc;
+            web3State.nft = nft;
+            web3State.stcDecimals = stcDecimals;
+
             renderJson("web3Result", {
                 walletAddress: address,
                 connectedChainId: `0x${network.chainId.toString(16)}`,
@@ -746,6 +804,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 expectedChainId: config.chainId,
                 stcContractAddress: config.stcContractAddress,
                 nftContractAddress: config.nftContractAddress,
+                stcDecimals,
                 explorer: config.explorerBase
             }, "Web3 wallet connected");
 
@@ -753,6 +812,97 @@ document.addEventListener("DOMContentLoaded", () => {
             setText("profileVerification", "Wallet Connected");
         } catch (error) {
             renderFeedback("web3Result", error.message, true);
+        }
+    });
+
+    registerSubmit("stcBalanceForm", async event => {
+        event.preventDefault();
+        try {
+            ensureWeb3Contracts();
+            const inputAddress = document.getElementById("web3BalanceAddress")?.value.trim();
+            const targetAddress = inputAddress || web3State.address;
+            if (!window.ethers.utils.isAddress(targetAddress)) {
+                throw new Error("Invalid wallet address.");
+            }
+
+            const raw = await web3State.stc.balanceOf(targetAddress);
+            const formatted = window.ethers.utils.formatUnits(raw, web3State.stcDecimals);
+            renderJson("web3BalanceResult", {
+                address: targetAddress,
+                balanceRaw: raw.toString(),
+                balanceFormatted: formatted,
+                symbol: "STC"
+            }, "STC balance");
+        } catch (error) {
+            renderFeedback("web3BalanceResult", error.message, true);
+        }
+    });
+
+    registerSubmit("approveStcForm", async event => {
+        event.preventDefault();
+        try {
+            ensureWeb3Contracts();
+            const spender = document.getElementById("approveSpender")?.value.trim();
+            const amount = document.getElementById("approveAmount")?.value.trim();
+            if (!window.ethers.utils.isAddress(spender)) {
+                throw new Error("Invalid spender address.");
+            }
+            if (!amount) {
+                throw new Error("Amount is required.");
+            }
+            const parsedAmount = window.ethers.utils.parseUnits(amount, web3State.stcDecimals);
+            const tx = await web3State.stc.approve(spender, parsedAmount);
+            const receipt = await tx.wait();
+
+            renderJson("approveResult", {
+                spender,
+                amount,
+                txHash: tx.hash,
+                blockNumber: receipt.blockNumber,
+                explorer: `${web3State.config.explorerBase}/tx/${tx.hash}`
+            }, "STC approval submitted");
+            event.target.reset();
+        } catch (error) {
+            renderFeedback("approveResult", error.message, true);
+        }
+    });
+
+    registerSubmit("mintOnchainForm", async event => {
+        event.preventDefault();
+        try {
+            ensureWeb3Contracts();
+            const to = document.getElementById("mintToAddress")?.value.trim();
+            const metadataUri = document.getElementById("mintMetadataUri")?.value.trim();
+            const feeEth = document.getElementById("mintFeeEth")?.value.trim();
+
+            if (!window.ethers.utils.isAddress(to)) {
+                throw new Error("Invalid recipient address.");
+            }
+            if (!metadataUri) {
+                throw new Error("Metadata URI is required.");
+            }
+
+            let valueWei;
+            if (feeEth) {
+                valueWei = window.ethers.utils.parseEther(feeEth);
+            } else {
+                valueWei = await web3State.nft.mintFee();
+            }
+
+            const tx = await web3State.nft.mintStamp(to, metadataUri, { value: valueWei });
+            const receipt = await tx.wait();
+
+            renderJson("mintOnchainResult", {
+                to,
+                metadataUri,
+                feeWei: valueWei.toString(),
+                txHash: tx.hash,
+                blockNumber: receipt.blockNumber,
+                explorer: `${web3State.config.explorerBase}/tx/${tx.hash}`
+            }, "NFT mint transaction confirmed");
+            event.target.reset();
+        } catch (error) {
+            renderFeedback("mintOnchainResult", error.message, true);
         }
     });
 
