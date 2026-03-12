@@ -6,32 +6,31 @@
     <title>Stampcoin Platform - Digital Stamps & Marketplace</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
     <style>
         :root {
             --primary-color: #4361ee;
             --secondary-color: #f72585;
             --success-color: #06d6a0;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #0dcaf0;
             --dark-bg: #0f3460;
             --light-bg: #f8f9fa;
         }
 
-        * {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
+        * { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body {
             background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a2e 100%);
             color: #333;
             min-height: 100vh;
         }
 
-        /* Header */
         .navbar {
             background: rgba(15, 52, 96, 0.95) !important;
             backdrop-filter: blur(10px);
-            border-bottom: 2px solid var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
             padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
         .navbar-brand {
@@ -42,9 +41,20 @@
 
         .navbar-brand i {
             color: var(--secondary-color);
+            margin-right: 0.5rem;
         }
 
-        /* Hero Section */
+        .nav-link {
+            color: #ddd !important;
+            transition: all 0.3s;
+            margin: 0 0.5rem;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+            transform: translateY(-2px);
+        }
+
         .hero {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
@@ -64,10 +74,14 @@
 
         .hero p {
             font-size: 1.1rem;
-            margin-bottom: 2rem;
+            margin-bottom: 0.5rem;
         }
 
-        /* Cards */
+        .hero .version {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
         .feature-card {
             background: white;
             border-radius: 15px;
@@ -76,10 +90,11 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             transition: transform 0.3s, box-shadow 0.3s;
             border: 1px solid #eee;
+            height: 100%;
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
             box-shadow: 0 15px 40px rgba(0,0,0,0.2);
         }
 
@@ -95,20 +110,40 @@
             font-weight: bold;
         }
 
-        /* Form Section */
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .stats-card h2 {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+
         .form-section {
             background: white;
             border-radius: 15px;
-            padding: 2rem;
+            padding: 2.5rem;
             box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
+            border-top: 4px solid var(--primary-color);
         }
 
         .form-section h2 {
             color: var(--primary-color);
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 1rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--dark-bg);
+            margin-bottom: 0.5rem;
         }
 
         .form-control {
@@ -123,7 +158,6 @@
             box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
         }
 
-        /* Buttons */
         .btn-primary {
             background: linear-gradient(135deg, var(--primary-color) 0%, #3a0ca3 100%);
             border: none;
@@ -136,6 +170,7 @@
         .btn-primary:hover {
             transform: scale(1.05);
             box-shadow: 0 10px 30px rgba(67, 97, 238, 0.4);
+            color: white;
         }
 
         .btn-secondary {
@@ -146,7 +181,35 @@
             font-weight: 600;
         }
 
-        /* Results Section */
+        .btn-secondary:hover {
+            background: #e80b6e;
+            color: white;
+        }
+
+        .nav-tabs {
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 2rem;
+        }
+
+        .nav-tabs .nav-link {
+            color: #666 !important;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: -2px;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color) !important;
+            border-bottom-color: var(--primary-color);
+            background: none;
+        }
+
         .results-container {
             background: white;
             border-radius: 15px;
@@ -154,6 +217,7 @@
             margin-top: 2rem;
             box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             display: none;
+            border-left: 4px solid var(--success-color);
         }
 
         .results-container.show {
@@ -162,77 +226,40 @@
         }
 
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .result-item {
-            background: var(--light-bg);
-            border-left: 4px solid var(--primary-color);
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: 8px;
-        }
-
-        .result-item strong {
-            color: var(--primary-color);
-        }
-
-        /* Wallet Display */
-        .wallet-card {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-
-        .wallet-card h3 {
-            font-size: 1rem;
-            opacity: 0.9;
-            margin-bottom: 0.5rem;
-        }
-
-        .wallet-card .balance {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-        }
-
-        /* Tab Navigation */
-        .nav-tabs {
-            border-bottom: 2px solid #e9ecef;
-            margin-bottom: 2rem;
-        }
-
-        .nav-tabs .nav-link {
-            color: #666;
+        .alert {
+            border-radius: 10px;
             border: none;
-            border-bottom: 3px solid transparent;
+        }
+
+        .alert-success {
+            background: rgba(6, 214, 160, 0.1);
+            color: var(--success-color);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--danger-color);
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
             font-weight: 600;
-            transition: all 0.3s;
         }
 
-        .nav-tabs .nav-link:hover {
-            color: var(--primary-color);
+        .badge-success {
+            background-color: var(--success-color);
+            color: white;
         }
 
-        .nav-tabs .nav-link.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-            background: none;
-        }
-
-        /* Table Styling */
         .table {
-            margin-top: 1rem;
+            margin-top: 1.5rem;
         }
 
         .table thead {
@@ -252,49 +279,70 @@
             vertical-align: middle;
         }
 
-        /* Status Badge */
-        .badge-success {
-            background-color: var(--success-color);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        /* Footer */
         .footer {
             background: rgba(15, 52, 96, 0.95);
             color: white;
-            padding: 2rem;
-            margin-top: 4rem;
+            padding: 3rem 2rem;
+            margin-top: 5rem;
             text-align: center;
-            border-top: 2px solid var(--primary-color);
+            border-top: 3px solid var(--primary-color);
         }
 
-        /* Loading Spinner */
-        .loading {
-            display: none;
+        .footer h5 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-weight: bold;
         }
 
-        .loading.show {
-            display: inline-block;
+        .footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s;
         }
 
-        /* Alert Messages */
-        .alert {
-            border-radius: 10px;
-            border: none;
-        }
-
-        .alert-success {
-            background: rgba(6, 214, 160, 0.1);
-            color: var(--success-color);
-            border-left: 4px solid var(--success-color);
-        }
-
-        .alert-danger {
-            background: rgba(247, 37, 133, 0.1);
+        .footer a:hover {
             color: var(--secondary-color);
-            border-left: 4px solid var(--secondary-color);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(247, 37, 133, 0.1));
+            border-left: 4px solid var(--primary-color);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-box i {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+
+        .badge-info {
+            background-color: var(--info-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 5px;
+            font-size: 0.875rem;
+        }
+
+        .platform-section {
+            margin-bottom: 4rem;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.8rem; }
+            .feature-card { margin-bottom: 1rem; }
+            .form-section { padding: 1.5rem; }
+            .stats-card h2 { font-size: 2rem; }
         }
     </style>
 </head>
@@ -310,15 +358,11 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#wallet">Wallet</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#marketplace">Marketplace</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#blockchain">Blockchain</a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#wallet">Wallet</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#marketplace">Marketplace</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#blockchain">Blockchain</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
                 </ul>
             </div>
         </div>
@@ -329,72 +373,137 @@
         <div class="hero">
             <h1><i class="fas fa-stamp"></i> Stampcoin Platform</h1>
             <p>Blockchain-powered digital stamps, wallet and marketplace</p>
-            <p style="font-size: 0.9rem; opacity: 0.9;">v2.0.0 | Live & Production Ready</p>
+            <p class="version">v2.0.0 | Live & Production Ready | Powered by Node.js & Express</p>
+            <div style="margin-top: 1.5rem;">
+                <span class="badge bg-light text-dark me-2"><i class="fas fa-check-circle"></i> 23 APIs</span>
+                <span class="badge bg-light text-dark me-2"><i class="fas fa-lock"></i> Secure</span>
+                <span class="badge bg-light text-dark"><i class="fas fa-globe"></i> Global</span>
+            </div>
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- Stats -->
     <div class="container">
-        <!-- Features -->
+        <div class="row mb-5">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h2>23</h2>
+                    <p>API Endpoints</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h2>100%</h2>
+                    <p>Uptime</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h2>BEP-20</h2>
+                    <p>STP Token</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h2>∞</h2>
+                    <p>Scalable</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div id="features" class="container platform-section">
+        <h2 style="color: white; margin-bottom: 3rem; text-align: center; font-weight: bold;">
+            <i class="fas fa-star"></i> Platform Features
+        </h2>
         <div class="row mb-5">
             <div class="col-md-3">
                 <div class="feature-card">
                     <i class="fas fa-wallet"></i>
                     <h3>Digital Wallet</h3>
-                    <p>Create and manage your digital wallet with instant transfers</p>
+                    <p>Create and manage wallets with instant balance tracking and secure transfers</p>
+                    <small class="text-muted">7 wallet endpoints</small>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="feature-card">
                     <i class="fas fa-store"></i>
                     <h3>Marketplace</h3>
-                    <p>Buy and sell digital stamps and collectibles</p>
+                    <p>Buy and sell digital stamps and collectibles with real-time pricing</p>
+                    <small class="text-muted">7 market endpoints</small>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="feature-card">
                     <i class="fas fa-cube"></i>
                     <h3>Blockchain</h3>
-                    <p>STP token on BNB Smart Chain (BEP-20)</p>
+                    <p>STP token on BNB Smart Chain with minting and balance management</p>
+                    <small class="text-muted">5 blockchain endpoints</small>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="feature-card">
                     <i class="fas fa-shield-alt"></i>
-                    <h3>Secure</h3>
-                    <p>Military-grade encryption and authentication</p>
+                    <h3>Security</h3>
+                    <p>Military-grade encryption, JWT auth, and production-grade monitoring</p>
+                    <small class="text-muted">Enterprise ready</small>
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- Main Content -->
+    <div class="container">
         <!-- Wallet Section -->
-        <div id="wallet" class="form-section">
-            <h2><i class="fas fa-wallet"></i> Wallet Management</h2>
-            
+        <div id="wallet" class="form-section platform-section">
+            <h2><i class="fas fa-wallet"></i> Digital Wallet Management</h2>
+            <p class="text-muted">Create wallets, transfer funds, and manage your digital balance</p>
+
             <ul class="nav nav-tabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#create-wallet">Create Wallet</button>
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#create-wallet">
+                        <i class="fas fa-plus-circle"></i> Create Wallet
+                    </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#view-wallet">View Wallet</button>
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#view-wallet">
+                        <i class="fas fa-eye"></i> View Wallet
+                    </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#transfer">Transfer</button>
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#transfer">
+                        <i class="fas fa-exchange-alt"></i> Transfer
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#transactions">
+                        <i class="fas fa-history"></i> Transactions
+                    </button>
                 </li>
             </ul>
 
             <div class="tab-content">
                 <!-- Create Wallet -->
                 <div class="tab-pane fade show active" id="create-wallet">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Create a New Wallet</strong><br>
+                            <small>Enter your User ID and Name to create a new digital wallet</small>
+                        </div>
+                    </div>
                     <form id="createWalletForm">
                         <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label">User ID</label>
-                                <input type="text" class="form-control" id="userId" placeholder="user123" required>
+                                <label class="form-label">User ID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="userId" placeholder="e.g., alice123" required>
+                                <small class="form-text">Unique identifier for your account</small>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">User Name</label>
-                                <input type="text" class="form-control" id="userName" placeholder="Alice" required>
+                                <label class="form-label">User Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="userName" placeholder="e.g., Alice Smith" required>
+                                <small class="form-text">Your display name</small>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary mt-3">
@@ -406,10 +515,17 @@
 
                 <!-- View Wallet -->
                 <div class="tab-pane fade" id="view-wallet">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>View Wallet Details</strong><br>
+                            <small>Enter a User ID to view wallet balance and stamps</small>
+                        </div>
+                    </div>
                     <form id="viewWalletForm">
                         <div class="mb-3">
-                            <label class="form-label">User ID</label>
-                            <input type="text" class="form-control" id="viewUserId" placeholder="user123" required>
+                            <label class="form-label">User ID <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="viewUserId" placeholder="e.g., alice123" required>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-eye"></i> View Wallet
@@ -420,161 +536,319 @@
 
                 <!-- Transfer -->
                 <div class="tab-pane fade" id="transfer">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Transfer Funds</strong><br>
+                            <small>Transfer balance from one wallet to another</small>
+                        </div>
+                    </div>
                     <form id="transferForm">
                         <div class="row">
                             <div class="col-md-4">
-                                <label class="form-label">From User ID</label>
-                                <input type="text" class="form-control" id="fromUserId" placeholder="user1" required>
+                                <label class="form-label">From User ID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="fromUserId" placeholder="Sender ID" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">To User ID</label>
-                                <input type="text" class="form-control" id="toUserId" placeholder="user2" required>
+                                <label class="form-label">To User ID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="toUserId" placeholder="Receiver ID" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Amount</label>
+                                <label class="form-label">Amount <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" id="transferAmount" placeholder="100" required>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary mt-3">
-                            <i class="fas fa-exchange-alt"></i> Transfer
+                            <i class="fas fa-arrow-right"></i> Transfer Funds
                         </button>
                     </form>
                     <div id="transferResult" class="results-container"></div>
+                </div>
+
+                <!-- Transactions -->
+                <div class="tab-pane fade" id="transactions">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Transaction History</strong><br>
+                            <small>View all transactions for a specific user</small>
+                        </div>
+                    </div>
+                    <form id="transactionsForm">
+                        <div class="mb-3">
+                            <label class="form-label">User ID <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="txUserId" placeholder="e.g., alice123" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-list"></i> View Transactions
+                        </button>
+                    </form>
+                    <div id="transactionsResult" class="results-container"></div>
                 </div>
             </div>
         </div>
 
         <!-- Marketplace Section -->
-        <div id="marketplace" class="form-section">
-            <h2><i class="fas fa-store"></i> Marketplace</h2>
-            
+        <div id="marketplace" class="form-section platform-section">
+            <h2><i class="fas fa-store"></i> Digital Marketplace</h2>
+            <p class="text-muted">List items for sale and browse the marketplace</p>
+
             <ul class="nav nav-tabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#list-item">List Item</button>
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#list-item">
+                        <i class="fas fa-arrow-up"></i> List Item
+                    </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#view-items">View Items</button>
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#view-items">
+                        <i class="fas fa-eye"></i> Browse Items
+                    </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#buy-item">Buy Item</button>
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#buy-item">
+                        <i class="fas fa-shopping-cart"></i> Buy Item
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#market-transactions">
+                        <i class="fas fa-receipt"></i> Transactions
+                    </button>
                 </li>
             </ul>
 
             <div class="tab-content">
                 <!-- List Item -->
                 <div class="tab-pane fade show active" id="list-item">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>List a New Item</strong><br>
+                            <small>Add your digital stamp or collectible to the marketplace</small>
+                        </div>
+                    </div>
                     <form id="listItemForm">
                         <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label">Seller ID</label>
-                                <input type="text" class="form-control" id="sellerId" placeholder="seller123" required>
+                                <label class="form-label">Seller ID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="sellerId" placeholder="Your User ID" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Item Name</label>
-                                <input type="text" class="form-control" id="itemName" placeholder="Digital Stamp #001" required>
+                                <label class="form-label">Item Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="itemName" placeholder="e.g., Vintage Stamp #001" required>
                             </div>
                         </div>
                         <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Price</label>
+                            <div class="col-md-4">
+                                <label class="form-label">Price <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" id="itemPrice" placeholder="100" required>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Type</label>
-                                <input type="text" class="form-control" id="itemType" placeholder="stamp" required>
+                            <div class="col-md-4">
+                                <label class="form-label">Type <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="itemType" placeholder="e.g., stamp" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Description</label>
+                                <input type="text" class="form-control" id="itemDesc" placeholder="Optional description">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary mt-3">
-                            <i class="fas fa-arrow-up"></i> List Item
+                            <i class="fas fa-cloud-upload-alt"></i> List Item
                         </button>
                     </form>
                     <div id="listItemResult" class="results-container"></div>
                 </div>
 
-                <!-- View Items -->
+                <!-- Browse Items -->
                 <div class="tab-pane fade" id="view-items">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Browse Marketplace</strong><br>
+                            <small>View all available items for sale</small>
+                        </div>
+                    </div>
                     <button class="btn btn-primary" id="viewItemsBtn">
-                        <i class="fas fa-eye"></i> Load Market Items
+                        <i class="fas fa-refresh"></i> Load Market Items
                     </button>
                     <div id="viewItemsResult" class="results-container"></div>
                 </div>
 
                 <!-- Buy Item -->
                 <div class="tab-pane fade" id="buy-item">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Purchase Item</strong><br>
+                            <small>Buy an item from the marketplace</small>
+                        </div>
+                    </div>
                     <form id="buyItemForm">
                         <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label">Item ID</label>
+                                <label class="form-label">Item ID <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="buyItemId" placeholder="item_..." required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Buyer ID</label>
-                                <input type="text" class="form-control" id="buyerId" placeholder="buyer123" required>
+                                <label class="form-label">Buyer ID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="buyerId" placeholder="Your User ID" required>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary mt-3">
-                            <i class="fas fa-shopping-cart"></i> Buy Item
+                            <i class="fas fa-shopping-bag"></i> Buy Item
                         </button>
                     </form>
                     <div id="buyItemResult" class="results-container"></div>
+                </div>
+
+                <!-- Market Transactions -->
+                <div class="tab-pane fade" id="market-transactions">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Market Transactions</strong><br>
+                            <small>View all marketplace transactions</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="marketTxBtn">
+                        <i class="fas fa-list"></i> View Transactions
+                    </button>
+                    <div id="marketTxResult" class="results-container"></div>
                 </div>
             </div>
         </div>
 
         <!-- Blockchain Section -->
-        <div id="blockchain" class="form-section">
-            <h2><i class="fas fa-cube"></i> Blockchain & Token</h2>
-            
+        <div id="blockchain" class="form-section platform-section">
+            <h2><i class="fas fa-cube"></i> Blockchain & Token Information</h2>
+            <p class="text-muted">View STP token details and blockchain metadata</p>
+
             <ul class="nav nav-tabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#token-info">Token Info</button>
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#token-info">
+                        <i class="fas fa-coins"></i> Token Info
+                    </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#blockchain-info">Blockchain Info</button>
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#blockchain-info">
+                        <i class="fas fa-info-circle"></i> Blockchain Info
+                    </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#token-balance">Check Balance</button>
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#token-balance">
+                        <i class="fas fa-piggy-bank"></i> Check Balance
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#token-supply">
+                        <i class="fas fa-chart-pie"></i> Token Supply
+                    </button>
                 </li>
             </ul>
 
             <div class="tab-content">
                 <!-- Token Info -->
                 <div class="tab-pane fade show active" id="token-info">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>STP Token Information</strong><br>
+                            <small>View StampCoin token details and distribution</small>
+                        </div>
+                    </div>
                     <button class="btn btn-primary" id="getTokenBtn">
-                        <i class="fas fa-info-circle"></i> Get Token Info
+                        <i class="fas fa-sync-alt"></i> Get Token Info
                     </button>
                     <div id="tokenResult" class="results-container"></div>
                 </div>
 
                 <!-- Blockchain Info -->
                 <div class="tab-pane fade" id="blockchain-info">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Blockchain Network Info</strong><br>
+                            <small>View blockchain metadata and network details</small>
+                        </div>
+                    </div>
                     <button class="btn btn-primary" id="getBlockchainBtn">
-                        <i class="fas fa-info-circle"></i> Get Blockchain Info
+                        <i class="fas fa-sync-alt"></i> Get Blockchain Info
                     </button>
                     <div id="blockchainResult" class="results-container"></div>
                 </div>
 
                 <!-- Check Balance -->
                 <div class="tab-pane fade" id="token-balance">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Check Token Balance</strong><br>
+                            <small>View STP token balance for an address</small>
+                        </div>
+                    </div>
                     <form id="balanceForm">
                         <div class="mb-3">
-                            <label class="form-label">Address</label>
-                            <input type="text" class="form-control" id="balanceAddress" placeholder="user123" required>
+                            <label class="form-label">Address / User ID <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="balanceAddress" placeholder="e.g., alice123" required>
                         </div>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-coins"></i> Check Balance
+                            <i class="fas fa-search"></i> Check Balance
                         </button>
                     </form>
                     <div id="balanceResult" class="results-container"></div>
                 </div>
+
+                <!-- Token Supply -->
+                <div class="tab-pane fade" id="token-supply">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Token Supply Metrics</strong><br>
+                            <small>View total supply and minted tokens</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="getSupplyBtn">
+                        <i class="fas fa-sync-alt"></i> Get Supply Info
+                    </button>
+                    <div id="supplyResult" class="results-container"></div>
+                </div>
             </div>
         </div>
 
-        <!-- API Status -->
-        <div class="form-section mt-5">
-            <h2><i class="fas fa-heartbeat"></i> API Status</h2>
+        <!-- About Section -->
+        <div id="about" class="form-section platform-section">
+            <h2><i class="fas fa-info-circle"></i> About Stampcoin Platform</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>What is Stampcoin?</h4>
+                    <p>Stampcoin Platform is a blockchain-inspired digital stamps platform featuring:</p>
+                    <ul>
+                        <li>Digital Wallet system for managing balances and stamps</li>
+                        <li>Peer-to-peer marketplace for buying and selling collectibles</li>
+                        <li>STP token on BNB Smart Chain (BEP-20 compatible)</li>
+                        <li>Secure transfers and transaction tracking</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4>Technical Details</h4>
+                    <p><strong>Token Details:</strong></p>
+                    <ul>
+                        <li>Token Name: StampCoin</li>
+                        <li>Symbol: STP</li>
+                        <li>Total Supply: 421,000,000</li>
+                        <li>Standard: BEP-20</li>
+                        <li>Network: BNB Smart Chain (Mainnet)</li>
+                        <li>Decimals: 18</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="form-section platform-section">
+            <h2><i class="fas fa-heartbeat"></i> System Health</h2>
+            <p class="text-muted">Check the system status and API availability</p>
             <button class="btn btn-primary" id="healthBtn">
-                <i class="fas fa-check"></i> Check Health
+                <i class="fas fa-check-circle"></i> Check System Health
             </button>
             <div id="healthResult" class="results-container"></div>
         </div>
@@ -582,14 +856,24 @@
 
     <!-- Footer -->
     <div class="footer">
-        <p><strong>Stampcoin Platform v2.0</strong></p>
+        <h5><i class="fas fa-stamp"></i> Stampcoin Platform</h5>
         <p>Blockchain-powered digital stamps and marketplace</p>
-        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
-            <i class="fas fa-globe"></i> https://stampcoin-platform.fly.dev
-        </p>
-        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
-            © 2024 Stampcoin Team | <a href="https://github.com/zedanazad43/stampcoin-platform" style="color: var(--primary-color); text-decoration: none;">GitHub</a>
-        </p>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <h6>Technology</h6>
+                <small>Node.js • Express • Bootstrap 5<br>Docker • Fly.io • GitHub</small>
+            </div>
+            <div class="col-md-4">
+                <h6>Resources</h6>
+                <small><a href="/api/info">API Documentation</a><br><a href="https://github.com/zedanazad43/stampcoin-platform" target="_blank">GitHub Repository</a></small>
+            </div>
+            <div class="col-md-4">
+                <h6>Contact</h6>
+                <small>Email: stampcoin.contact@gmail.com<br><a href="https://github.com/zedanazad43" target="_blank">GitHub Profile</a></small>
+            </div>
+        </div>
+        <hr style="opacity: 0.2; margin: 2rem 0;">
+        <p style="font-size: 0.9rem; margin: 0;">© 2024 Stampcoin Team | v2.0.0 | <a href="https://stampcoin-platform.fly.dev/">Live Platform</a></p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
