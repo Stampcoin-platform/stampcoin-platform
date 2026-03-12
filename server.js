@@ -1,7 +1,9 @@
 const express = require("express");
 const fs = require("fs").promises;
+const fsSync = require("fs");
 const path = require("path");
 const cors = require("cors");
+const multer = require("multer");
 const wallet = require("./wallet");
 const market = require("./market");
 const blockchain = require("./blockchain");
@@ -24,7 +26,28 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const DATA_FILE = path.join(__dirname, "data.json");
+const COMMUNITY_FILE = path.join(__dirname, "community-posts.json");
+const NFT_DRAFTS_FILE = path.join(__dirname, "nft-drafts.json");
+const P2P_LISTINGS_FILE = path.join(__dirname, "p2p-listings.json");
+const UPLOAD_DIR = path.join(__dirname, "public", "uploads");
 const SYNC_TOKEN = process.env.SYNC_TOKEN || "";
+
+if (!fsSync.existsSync(UPLOAD_DIR)) {
+  fsSync.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+const upload = multer({
+  dest: UPLOAD_DIR,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const isJpg = file.mimetype === "image/jpeg" || file.mimetype === "image/jpg";
+    if (!isJpg) {
+      cb(new Error("Only JPG images are allowed"));
+      return;
+    }
+    cb(null, true);
+  }
+});
 
 // === Authentication Middleware ===
 function requireToken(req, res, next) {
@@ -335,6 +358,176 @@ async function writeData(todos) {
     return false;
   }
 }
+
+async function readJsonArray(filePath) {
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeJsonArray(filePath, rows) {
+  await fs.writeFile(filePath, JSON.stringify(rows, null, 2), "utf8");
+}
+
+// === Community Hub API ===
+app.get("/api/community/posts", async (_req, res) => {
+  try {
+    const posts = await readJsonArray(COMMUNITY_FILE);
+    res.json(posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/community/posts", async (req, res) => {
+  try {
+    const { title, body, imageUrl, authorId } = req.body || {};
+    if (!title || !body) {
+      return res.status(400).json({ error: "title and body are required" });
+    }
+    const posts = await readJsonArray(COMMUNITY_FILE);
+    const post = {
+      id: `post_${Date.now()}`,
+      title,
+      body,
+      imageUrl: imageUrl || "",
+      authorId: authorId || "anonymous",
+      createdAt: new Date().toISOString()
+    };
+    posts.push(post);
+    await writeJsonArray(COMMUNITY_FILE, posts);
+    res.json(post);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// === NFT Categories + Mint Draft API ===
+app.get("/api/nft/categories", (_req, res) => {
+  res.json([
+    { id: "PH-001", name: "Penny Black Heritage", floorPriceUsd: 220 },
+    { id: "BM-019", name: "Blue Mauritius Legacy", floorPriceUsd: 680 },
+    { id: "IJ-024", name: "Inverted Jenny Classics", floorPriceUsd: 390 },
+    { id: "MAP-311", name: "Modern Arab Philately", floorPriceUsd: 170 }
+  ]);
+});
+
+app.get("/api/nft/mint-drafts", async (_req, res) => {
+  try {
+    const drafts = await readJsonArray(NFT_DRAFTS_FILE);
+    res.json(drafts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/nft/mint-drafts", upload.single("stampImage"), async (req, res) => {
+  try {
+    const { ownerId, stampTitle, feeCurrency, feeAmount } = req.body || {};
+    if (!ownerId || !stampTitle || !feeCurrency || feeAmount === undefined) {
+      return res.status(400).json({ error: "ownerId, stampTitle, feeCurrency, and feeAmount are required" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: "JPG image is required" });
+    }
+
+    const amount = Number(feeAmount);
+    const userShare = Number((amount * 0.85).toFixed(6));
+    const platformShare = Number((amount * 0.15).toFixed(6));
+    const publicImagePath = `/uploads/${req.file.filename}`;
+
+    const drafts = await readJsonArray(NFT_DRAFTS_FILE);
+    const draft = {
+      id: `draft_${Date.now()}`,
+      ownerId,
+      stampTitle,
+      feeCurrency,
+      feeAmount: amount,
+      split: {
+        user: userShare,
+        platform: platformShare,
+        userPercent: 85,
+        platformPercent: 15
+      },
+      imagePath: publicImagePath,
+      fileName: req.file.originalname,
+      web3Status: "ready_for_mint",
+      createdAt: new Date().toISOString()
+    };
+    drafts.push(draft);
+    await writeJsonArray(NFT_DRAFTS_FILE, drafts);
+    res.json(draft);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// === P2P Listings API ===
+app.get("/api/p2p/listings", async (_req, res) => {
+  try {
+    const listings = await readJsonArray(P2P_LISTINGS_FILE);
+    res.json(listings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/p2p/listings", async (req, res) => {
+  try {
+    const { sellerId, stampDetails, askPriceUsd } = req.body || {};
+    if (!sellerId || !stampDetails || !askPriceUsd) {
+      return res.status(400).json({ error: "sellerId, stampDetails, and askPriceUsd are required" });
+    }
+    const price = Number(askPriceUsd);
+    const platformFeeUsd = Number((price * 0.035).toFixed(2));
+    const sellerNetUsd = Number((price - platformFeeUsd).toFixed(2));
+
+    const listings = await readJsonArray(P2P_LISTINGS_FILE);
+    const row = {
+      id: `p2p_${Date.now()}`,
+      sellerId,
+      stampDetails,
+      askPriceUsd: price,
+      platformFeeUsd,
+      sellerNetUsd,
+      escrowStatus: "open",
+      createdAt: new Date().toISOString()
+    };
+    listings.push(row);
+    await writeJsonArray(P2P_LISTINGS_FILE, listings);
+    res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// === Web3 API ===
+app.get("/api/web3/config", (_req, res) => {
+  res.json({
+    chainId: process.env.WEB3_CHAIN_ID || "0xaa36a7",
+    networkName: process.env.WEB3_NETWORK || "sepolia",
+    rpcUrl: process.env.WEB3_RPC_URL || "https://rpc.sepolia.org",
+    stcContractAddress: process.env.STP_CONTRACT_ADDRESS || "0x8A63eA3D5D8D0F7A9C09F9e6f8c5B18F4c4d1A21",
+    nftContractAddress: process.env.STC_NFT_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000",
+    explorerBase: process.env.WEB3_EXPLORER || "https://sepolia.etherscan.io"
+  });
+});
+
+app.post("/api/web3/quote", (req, res) => {
+  const amount = Number((req.body && req.body.amount) || 0);
+  const feeRate = 0.015;
+  const estimatedFee = Number((amount * feeRate).toFixed(6));
+  res.json({
+    amount,
+    feeRate,
+    estimatedFee,
+    totalWithFee: Number((amount + estimatedFee).toFixed(6))
+  });
+});
 
 app.get("/sync", requireToken, async (req, res) => {
   const todos = await readData();

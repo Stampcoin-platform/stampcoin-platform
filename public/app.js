@@ -270,6 +270,66 @@ function registerSubmit(formId, handler) {
     }
 
 document.addEventListener("DOMContentLoaded", () => {
+    const communityPosts = [];
+
+    function renderCommunityFeed() {
+        const feed = document.getElementById("communityFeed");
+        if (!feed) return;
+
+        if (!communityPosts.length) {
+            feed.innerHTML = '<div class="empty-state">No posts yet. Be the first to publish your stamp story.</div>';
+            return;
+        }
+
+        feed.innerHTML = communityPosts.map(post => `
+            <article class="feed-post">
+                <h4>${escapeHtml(post.title)}</h4>
+                <p>${escapeHtml(post.body)}</p>
+                ${post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="Stamp preview for ${escapeHtml(post.title)}">` : ""}
+            </article>
+        `).join("");
+    }
+
+    async function loadCommunityPosts() {
+        try {
+            const rows = await requestJson("api/community/posts");
+            communityPosts.length = 0;
+            if (Array.isArray(rows)) {
+                communityPosts.push(...rows);
+            }
+            renderCommunityFeed();
+        } catch {
+            renderCommunityFeed();
+        }
+    }
+
+    function appendAiMessage(text, role) {
+        const log = document.getElementById("aiLog");
+        if (!log) return;
+        const item = document.createElement("div");
+        item.className = `ai-msg ${role}`;
+        item.textContent = text;
+        log.appendChild(item);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function aiReplyFor(text) {
+        const input = text.toLowerCase();
+        if (input.includes("wallet") || input.includes("محفظ")) {
+            return "For wallet issues: verify user ID, check transfer history in Wallet Lab, and confirm balance before purchase.";
+        }
+        if (input.includes("nft") || input.includes("mint") || input.includes("سك")) {
+            return "NFT mint flow: upload JPG, choose fee currency, review user/platform split, then confirm metadata and ownership.";
+        }
+        if (input.includes("payment") || input.includes("دفع") || input.includes("fiat")) {
+            return "Payment options support STC and selected crypto rails. Fiat gateway can be integrated through a licensed PSP.";
+        }
+        if (input.includes("problem") || input.includes("issue") || input.includes("مشك")) {
+            return "Please provide transaction ID, user ID, and timestamp. I can guide recovery and escalation steps.";
+        }
+        return "I can help with wallet operations, NFT minting, purchases, trading flow, and p2p escrow safety checks.";
+    }
+
     registerSubmit("createWalletForm", async event => {
         event.preventDefault();
         const userId = document.getElementById("userId").value.trim();
@@ -556,6 +616,170 @@ document.addEventListener("DOMContentLoaded", () => {
             renderFeedback("adminAddStampResult", error.message, true);
         }
     });
+
+    registerSubmit("culturePostForm", async event => {
+        event.preventDefault();
+        const title = document.getElementById("cultureTitle")?.value.trim();
+        const imageUrl = document.getElementById("cultureImage")?.value.trim();
+        const body = document.getElementById("cultureBody")?.value.trim();
+
+        try {
+            await requestJson("api/community/posts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title,
+                    body,
+                    imageUrl,
+                    authorId: document.getElementById("profileUserName")?.textContent || "collector-pro"
+                })
+            });
+            await loadCommunityPosts();
+            renderFeedback("culturePostResult", "Post published to community feed.", false);
+            event.target.reset();
+        } catch (error) {
+            renderFeedback("culturePostResult", error.message, true);
+        }
+    });
+
+    registerSubmit("mintJpgForm", async event => {
+        event.preventDefault();
+        const ownerId = document.getElementById("mintOwnerId")?.value.trim();
+        const stampTitle = document.getElementById("mintStampTitle")?.value.trim();
+        const feeCurrency = document.getElementById("mintFeeCurrency")?.value;
+        const feeAmount = Number(document.getElementById("mintFeeAmount")?.value || 0);
+        const fileInput = document.getElementById("mintJpgFile");
+        const file = fileInput?.files?.[0];
+
+        if (!file) {
+            renderFeedback("mintJpgResult", "Please select a JPG file.", true);
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append("ownerId", ownerId || "unknown");
+            formData.append("stampTitle", stampTitle || "Untitled stamp");
+            formData.append("feeCurrency", feeCurrency || "STC");
+            formData.append("feeAmount", String(feeAmount || 0));
+            formData.append("stampImage", file);
+
+            const response = await fetch(apiPath("api/nft/mint-drafts"), {
+                method: "POST",
+                body: formData
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || "Failed to create NFT draft");
+            }
+
+            renderJson("mintJpgResult", payload, "NFT draft generated");
+
+            const preview = document.getElementById("mintNftPreview");
+            if (preview) {
+                preview.innerHTML = `
+                    <article class="nft-preview-card">
+                        <img src="${escapeHtml(payload.imagePath)}" alt="Preview ${escapeHtml(payload.stampTitle)}">
+                        <h4>${escapeHtml(payload.stampTitle)}</h4>
+                        <p>Owner: ${escapeHtml(payload.ownerId)}</p>
+                        <p>Mint fee: ${escapeHtml(String(payload.feeAmount))} ${escapeHtml(payload.feeCurrency)}</p>
+                        <p>User share: ${escapeHtml(String(payload.split.userPercent))}% | Platform fee: ${escapeHtml(String(payload.split.platformPercent))}%</p>
+                    </article>
+                `;
+            }
+
+            setText("splitUserShare", `${payload.split.userPercent}%`);
+            setText("splitPlatformShare", `${payload.split.platformPercent}%`);
+        } catch (error) {
+            renderFeedback("mintJpgResult", error.message, true);
+        }
+    });
+
+    registerSubmit("p2pSaleForm", async event => {
+        event.preventDefault();
+        const seller = document.getElementById("p2pSeller")?.value.trim();
+        const stamp = document.getElementById("p2pStamp")?.value.trim();
+        const price = Number(document.getElementById("p2pPrice")?.value || 0);
+        try {
+            const payload = await requestJson("api/p2p/listings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sellerId: seller, stampDetails: stamp, askPriceUsd: price })
+            });
+            renderJson("p2pSaleResult", payload, "Escrow listing draft");
+            renderFeedback("p2pEscrowResult", "Escrow policy applied: funds lock, shipment proof, confirmation release.", false);
+            event.target.reset();
+        } catch (error) {
+            renderFeedback("p2pSaleResult", error.message, true);
+        }
+    });
+
+    document.getElementById("openExchangeBtn")?.addEventListener("click", () => {
+        renderFeedback("exchangeResult", "Exchange panel blueprint loaded: orderbook, limit/market orders, custody checks.", false);
+    });
+
+    document.getElementById("openDexBtn")?.addEventListener("click", () => {
+        renderFeedback("dexResult", "DEX blueprint loaded: wallet connect, token approval, swap route, slippage control.", false);
+    });
+
+    document.getElementById("openFiatBtn")?.addEventListener("click", () => {
+        renderFeedback("fiatResult", "Fiat deposit blueprint loaded: KYC, payment gateway, treasury confirmation.", false);
+    });
+
+    document.getElementById("connectWeb3Btn")?.addEventListener("click", async () => {
+        try {
+            if (!window.ethereum || !window.ethers) {
+                throw new Error("MetaMask or ethers.js is not available in this browser.");
+            }
+
+            const config = await requestJson("api/web3/config");
+            const provider = new window.ethers.providers.Web3Provider(window.ethereum, "any");
+            await provider.send("eth_requestAccounts", []);
+            const signer = provider.getSigner();
+            const address = await signer.getAddress();
+            const network = await provider.getNetwork();
+
+            renderJson("web3Result", {
+                walletAddress: address,
+                connectedChainId: `0x${network.chainId.toString(16)}`,
+                networkName: network.name,
+                expectedChainId: config.chainId,
+                stcContractAddress: config.stcContractAddress,
+                nftContractAddress: config.nftContractAddress,
+                explorer: config.explorerBase
+            }, "Web3 wallet connected");
+
+            setText("profileWallet", `${address.slice(0, 6)}...${address.slice(-4)}`);
+            setText("profileVerification", "Wallet Connected");
+        } catch (error) {
+            renderFeedback("web3Result", error.message, true);
+        }
+    });
+
+    document.getElementById("aiToggleBtn")?.addEventListener("click", () => {
+        const panel = document.getElementById("aiPanel");
+        if (!panel) return;
+        panel.hidden = !panel.hidden;
+    });
+
+    document.getElementById("aiCloseBtn")?.addEventListener("click", () => {
+        const panel = document.getElementById("aiPanel");
+        if (panel) panel.hidden = true;
+    });
+
+    registerSubmit("aiForm", async event => {
+        event.preventDefault();
+        const input = document.getElementById("aiInput");
+        const text = input?.value.trim();
+        if (!text) return;
+
+        appendAiMessage(text, "user");
+        const reply = aiReplyFor(text);
+        setTimeout(() => appendAiMessage(reply, "bot"), 180);
+        event.target.reset();
+    });
+
+    loadCommunityPosts();
 
     refreshHeroMetrics();
     loadListings();
