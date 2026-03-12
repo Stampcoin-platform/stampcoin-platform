@@ -83,6 +83,43 @@ function getAllMarketItems(filter = {}) {
     items = items.filter(item => item.sellerId === filter.sellerId);
   }
 
+  if (typeof filter.minPrice === "number") {
+    items = items.filter(item => Number(item.price) >= filter.minPrice);
+  }
+
+  if (typeof filter.maxPrice === "number") {
+    items = items.filter(item => Number(item.price) <= filter.maxPrice);
+  }
+
+  if (filter.search) {
+    const search = String(filter.search).toLowerCase();
+    items = items.filter(item => {
+      return [item.name, item.description, item.sellerId, item.type]
+        .filter(Boolean)
+        .some(value => String(value).toLowerCase().includes(search));
+    });
+  }
+
+  if (filter.sort === "price-asc") {
+    items.sort((left, right) => Number(left.price) - Number(right.price));
+  }
+
+  if (filter.sort === "price-desc") {
+    items.sort((left, right) => Number(right.price) - Number(left.price));
+  }
+
+  if (filter.sort === "newest") {
+    items.sort((left, right) => new Date(right.listedAt).getTime() - new Date(left.listedAt).getTime());
+  }
+
+  if (filter.sort === "oldest") {
+    items.sort((left, right) => new Date(left.listedAt).getTime() - new Date(right.listedAt).getTime());
+  }
+
+  if (typeof filter.limit === "number" && filter.limit > 0) {
+    items = items.slice(0, filter.limit);
+  }
+
   return items;
 }
 

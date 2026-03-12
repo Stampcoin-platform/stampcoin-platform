@@ -151,6 +151,19 @@ app.get("/api/market/items", (req, res) => {
     if (req.query.status) filter.status = req.query.status;
     if (req.query.type) filter.type = req.query.type;
     if (req.query.sellerId) filter.sellerId = req.query.sellerId;
+    if (req.query.search) filter.search = req.query.search;
+
+    const minPrice = Number(req.query.minPrice);
+    if (!Number.isNaN(minPrice)) filter.minPrice = minPrice;
+
+    const maxPrice = Number(req.query.maxPrice);
+    if (!Number.isNaN(maxPrice)) filter.maxPrice = maxPrice;
+
+    if (req.query.sort) filter.sort = req.query.sort;
+
+    const limit = Number(req.query.limit);
+    if (Number.isInteger(limit) && limit > 0) filter.limit = limit;
+
     res.json(market.getAllMarketItems(filter));
   } catch (e) {
     res.status(500).json({ error: e.message });

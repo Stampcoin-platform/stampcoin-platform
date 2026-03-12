@@ -1,4 +1,5 @@
 const API_ROOT = "/";
+const helpers = globalThis.StampcoinAppHelpers;
 
 function apiPath(path) {
     return `${API_ROOT}${path.replace(/^\//, "")}`;
@@ -22,20 +23,11 @@ async function requestJson(path, options = {}) {
 }
 
 function escapeHtml(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+    return helpers.escapeHtml(value);
 }
 
 function formatNumber(value) {
-    const numeric = Number(value);
-    if (Number.isNaN(numeric)) {
-        return "--";
-    }
-    return new Intl.NumberFormat("en-US", { notation: numeric > 999999 ? "compact" : "standard" }).format(numeric);
+    return helpers.formatNumber(value);
 }
 
 function formatDate(value) {
@@ -140,30 +132,25 @@ async function loadListings() {
     target.innerHTML = '<div class="empty-state">Loading featured listings...</div>';
 
     try {
-        const searchVal = (document.getElementById("filterSearch")?.value || "").toLowerCase().trim();
+        const searchVal = (document.getElementById("filterSearch")?.value || "").trim();
         const typeVal = document.getElementById("filterType")?.value || "";
         const statusVal = document.getElementById("filterStatus")?.value || "";
         const sortVal = document.getElementById("filterSort")?.value || "";
 
-        const params = new URLSearchParams();
-        if (typeVal) params.set("type", typeVal);
-        if (statusVal) params.set("status", statusVal);
-        const qs = params.toString();
+        const qs = helpers.buildListingQuery({
+            search: searchVal,
+            type: typeVal,
+            status: statusVal,
+            sort: sortVal
+        });
 
         const items = await requestJson(`api/market/items${qs ? `?${qs}` : ""}`);
-        let listings = Array.isArray(items) ? items : [];
-
-        if (searchVal) {
-            listings = listings.filter(item =>
-                (item.name || "").toLowerCase().includes(searchVal) ||
-                (item.description || "").toLowerCase().includes(searchVal) ||
-                (item.sellerId || "").toLowerCase().includes(searchVal)
-            );
-        }
-
-        if (sortVal === "price-asc") listings = [...listings].sort((a, b) => (a.price || 0) - (b.price || 0));
-        if (sortVal === "price-desc") listings = [...listings].sort((a, b) => (b.price || 0) - (a.price || 0));
-        if (sortVal === "newest") listings = [...listings].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        const listings = helpers.filterAndSortListings(Array.isArray(items) ? items : [], {
+            search: searchVal,
+            type: typeVal,
+            status: statusVal,
+            sort: sortVal
+        });
 
         if (label) label.textContent = `${listings.length} item${listings.length === 1 ? "" : "s"}`;
 
@@ -172,7 +159,7 @@ async function loadListings() {
             return;
         }
 
-        target.innerHTML = listings.map(listingCardHtml).join("");
+        target.innerHTML = listings.map(item => helpers.renderListingCard(item)).join("");
     } catch (error) {
         if (label) label.textContent = "Unable to load";
         target.innerHTML = `<div class="listing-empty">${escapeHtml(error.message)}</div>`;
@@ -270,56 +257,16 @@ function registerSubmit(formId, handler) {
     async function loadTokenDist() {
         try {
             const token = await requestJson("api/token");
-            setText("distName", token.name || "--");
-            setText("distSymbol", token.symbol || "--");
-            setText("distCirculating", formatNumber(token.circulatingSupply ?? token.totalSupply));
-            setText("distMax", formatNumber(token.maxSupply ?? token.totalSupply));
-            setText("distChain", token.blockchain || token.network || "STP Chain");
-            setText("distDecimals", String(token.decimals ?? "18"));
+            const summary = helpers.getTokenStripValues(token);
+            setText("distName", summary.name);
+            setText("distSymbol", summary.symbol);
+            setText("distCirculating", summary.circulating);
+            setText("distMax", summary.max);
+            setText("distChain", summary.chain);
+            setText("distDecimals", summary.decimals);
         } catch {
             // non-critical — strip stays at defaults
         }
-    }
-
-    // ── Listing type styling ──────────────────────────────────────────────────────
-    const TYPE_GRADIENT = {
-        stamp:       "linear-gradient(135deg,#10325d 0%,#2d67c8 100%)",
-        collectible: "linear-gradient(135deg,#7c4a0c 0%,#c98b2a 100%)",
-        limited:     "linear-gradient(135deg,#6b1212 0%,#c25454 100%)"
-    };
-    const TYPE_ICON = { stamp: "fa-stamp", collectible: "fa-gem", limited: "fa-fire" };
-    const TYPE_BADGE = {
-        stamp:       "background:rgba(16,50,93,0.12);color:var(--navy)",
-        collectible: "background:rgba(201,139,42,0.14);color:var(--gold)",
-        limited:     "background:rgba(194,84,84,0.12);color:var(--red)"
-    };
-
-    function listingCardHtml(item) {
-        const t = (item.type || "").toLowerCase();
-        const grad = TYPE_GRADIENT[t] || "linear-gradient(135deg,#2a3848 0%,#44546f 100%)";
-        const icon = TYPE_ICON[t] || "fa-tag";
-        const badge = TYPE_BADGE[t] || "background:rgba(17,35,63,0.07);color:var(--ink-soft)";
-        const sold = item.status === "sold";
-        return `
-            <article class="listing-card${sold ? " listing-sold" : ""}">
-                <div class="listing-img" style="background:${grad}">
-                    <i class="fa-solid ${icon}"></i>
-                    ${sold ? '<span class="sold-overlay">Sold</span>' : ""}
-                </div>
-                <div class="listing-body">
-                    <span class="listing-type" style="${badge}">${escapeHtml(item.type || "collectible")}</span>
-                    <h4>${escapeHtml(item.name || "Untitled Item")}</h4>
-                    <p>${escapeHtml(item.description || "No description provided for this listing.")}</p>
-                    <div class="listing-meta">
-                        <div>
-                            <div class="listing-price">${formatNumber(item.price || 0)} STP</div>
-                            <small>Seller: ${escapeHtml(item.sellerId || "unknown")}</small>
-                        </div>
-                        <span class="json-chip">${escapeHtml(item.status || "active")}</span>
-                    </div>
-                </div>
-            </article>
-        `;
     }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -499,7 +446,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(apiPath("api/wallets"), {
                 headers: { "Authorization": `Bearer ${token}` }
             });
-            if (res.status === 401 || res.status === 403) {
+            if (!res.ok) {
                 throw new Error("Token rejected");
             }
             setAdminToken(token);
@@ -563,7 +510,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const payload = await adminRequest("api/blockchain/mint", {
                 method: "POST",
-                body: JSON.stringify({ to, amount })
+                body: JSON.stringify(helpers.buildMintPayload(to, amount))
             });
             renderJson("adminMintResult", payload, "Mint completed");
             event.target.reset();
