@@ -9,8 +9,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract StampCoinToken is ERC20, Ownable {
     uint256 public constant INITIAL_SUPPLY = 42_000_000 * 10 ** 18;
 
-    constructor(address treasury) ERC20("StampCoin", "STC") Ownable(treasury) {
+    constructor(address treasury) ERC20("StampCoin", "STC") {
         require(treasury != address(0), "treasury required");
+        _transferOwnership(treasury);
         _mint(treasury, INITIAL_SUPPLY);
     }
 

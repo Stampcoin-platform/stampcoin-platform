@@ -19,8 +19,9 @@ contract StampNFT is ERC721URIStorage, Ownable {
         uint256 mintFeePaid
     );
 
-    constructor(address treasury, uint256 initialMintFee) ERC721("Stamp NFT", "SNFT") Ownable(treasury) {
+    constructor(address treasury, uint256 initialMintFee) ERC721("Stamp NFT", "SNFT") {
         require(treasury != address(0), "treasury required");
+        _transferOwnership(treasury);
         feeTreasury = treasury;
         mintFee = initialMintFee;
     }
