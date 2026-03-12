@@ -1,343 +1,384 @@
-// Stampcoin Platform - Frontend API Integration
-// Production-ready interactive dashboard with comprehensive features
+const API_ROOT = "/";
 
-const API_BASE = '/';
-
-// Display results with proper formatting
-function showResult(containerId, data, isError = false) {
-    const container = document.getElementById(containerId);
-    if (!data) return;
-
-    container.classList.add('show');
-    
-    let html = '';
-    if (isError) {
-        html = `<div class="alert alert-danger">
-            <strong><i class="fas fa-exclamation-circle"></i> Error:</strong> ${data.message || data.error || JSON.stringify(data)}
-        </div>`;
-    } else {
-        html = `<div class="alert alert-success">
-            <strong><i class="fas fa-check-circle"></i> Success!</strong>
-        </div>`;
-        html += `<pre style="background: #f8f9fa; padding: 1rem; border-radius: 8px; overflow-x: auto; border-left: 4px solid #06d6a0;">`;
-        html += JSON.stringify(data, null, 2);
-        html += `</pre>`;
-    }
-    
-    container.innerHTML = html;
+function apiPath(path) {
+    return `${API_ROOT}${path.replace(/^\//, "")}`;
 }
 
-// ===== WALLET ENDPOINTS =====
+async function requestJson(path, options = {}) {
+    const response = await fetch(apiPath(path), options);
+    let payload;
 
-// Create Wallet
-document.getElementById('createWalletForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const userId = document.getElementById('userId').value;
-    const userName = document.getElementById('userName').value;
-    
     try {
-        const response = await fetch(`${API_BASE}api/wallet/create`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, userName })
-        });
-        
-        const data = await response.json();
-        showResult('createWalletResult', data, !response.ok);
-        
-        if (response.ok) {
-            document.getElementById('createWalletForm').reset();
+        payload = await response.json();
+    } catch {
+        payload = { error: "Invalid JSON response" };
+    }
+
+    if (!response.ok) {
+        throw new Error(payload.error || payload.message || `Request failed with ${response.status}`);
+    }
+
+    return payload;
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function formatNumber(value) {
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) {
+        return "--";
+    }
+    return new Intl.NumberFormat("en-US", { notation: numeric > 999999 ? "compact" : "standard" }).format(numeric);
+}
+
+function formatDate(value) {
+    if (!value) {
+        return "--";
+    }
+    return new Date(value).toLocaleString();
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function renderFeedback(targetId, content, isError = false) {
+    const target = document.getElementById(targetId);
+    if (!target) {
+        return;
+    }
+
+    target.innerHTML = `
+        <div class="feedback ${isError ? "error" : "success"}">
+            <strong>${isError ? "Request failed" : "Request completed"}</strong>
+            <span>${escapeHtml(content)}</span>
+        </div>
+    `;
+}
+
+function renderJson(targetId, payload, title) {
+    const target = document.getElementById(targetId);
+    if (!target) {
+        return;
+    }
+
+    const heading = title ? `<div class="feedback success"><strong>${escapeHtml(title)}</strong><span>Live response payload</span></div>` : "";
+    target.innerHTML = `${heading}<div class="json-panel"><pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre></div>`;
+}
+
+function renderTable(targetId, columns, rows) {
+    const target = document.getElementById(targetId);
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No records returned.</div>';
+        return;
+    }
+
+    const head = columns.map(column => `<th>${escapeHtml(column.label)}</th>`).join("");
+    const body = rows.map(row => {
+        const cells = columns.map(column => `<td>${escapeHtml(column.render(row))}</td>`).join("");
+        return `<tr>${cells}</tr>`;
+    }).join("");
+
+    target.innerHTML = `<div class="table-panel"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+async function refreshHeroMetrics() {
+    try {
+        const [items, transactions, token, health] = await Promise.all([
+            requestJson("api/market/items"),
+            requestJson("api/market/transactions"),
+            requestJson("api/token"),
+            requestJson("health")
+        ]);
+
+        setText("metricListings", formatNumber(Array.isArray(items) ? items.length : 0));
+        setText("metricTransactions", formatNumber(Array.isArray(transactions) ? transactions.length : 0));
+        setText("metricSupply", formatNumber(token.totalSupply));
+        setText("metricVersion", health.version || token.version || "2.0.0");
+
+        const pill = document.getElementById("heroHealthPill");
+        if (pill) {
+            pill.textContent = health.status === "ok" ? "Live" : health.status || "Unknown";
+            pill.classList.remove("status-warn");
+            pill.classList.add(health.status === "ok" ? "status-ok" : "status-warn");
         }
     } catch (error) {
-        showResult('createWalletResult', { error: error.message }, true);
-    }
-});
-
-// View Wallet
-document.getElementById('viewWalletForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const userId = document.getElementById('viewUserId').value;
-    
-    try {
-        const response = await fetch(`${API_BASE}api/wallet/${userId}`);
-        const data = await response.json();
-        showResult('viewWalletResult', data, !response.ok);
-    } catch (error) {
-        showResult('viewWalletResult', { error: error.message }, true);
-    }
-});
-
-// Transfer Funds
-document.getElementById('transferForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const fromUserId = document.getElementById('fromUserId').value;
-    const toUserId = document.getElementById('toUserId').value;
-    const amount = parseInt(document.getElementById('transferAmount').value);
-    
-    try {
-        const response = await fetch(`${API_BASE}api/wallet/transfer`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fromUserId, toUserId, amount })
-        });
-        
-        const data = await response.json();
-        showResult('transferResult', data, !response.ok);
-        
-        if (response.ok) {
-            document.getElementById('transferForm').reset();
+        setText("metricListings", "--");
+        setText("metricTransactions", "--");
+        setText("metricSupply", "--");
+        setText("metricVersion", "--");
+        const pill = document.getElementById("heroHealthPill");
+        if (pill) {
+            pill.textContent = "Degraded";
+            pill.classList.remove("status-ok");
+            pill.classList.add("status-warn");
         }
-    } catch (error) {
-        showResult('transferResult', { error: error.message }, true);
+        console.error(error);
     }
-});
+}
 
-// View Transactions
-document.getElementById('transactionsForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const userId = document.getElementById('txUserId').value;
-    
+async function loadListings() {
+    const target = document.getElementById("featuredListings");
+    const label = document.getElementById("listingCountLabel");
+
+    if (!target) {
+        return;
+    }
+
+    target.innerHTML = '<div class="empty-state">Loading featured listings...</div>';
+
     try {
-        const response = await fetch(`${API_BASE}api/wallet/${userId}/transactions`);
-        const data = await response.json();
-        
-        const container = document.getElementById('transactionsResult');
-        container.classList.add('show');
-        
-        if (Array.isArray(data) && data.length > 0) {
-            let html = `<div class="alert alert-success">Found ${data.length} transaction(s)</div>`;
-            html += '<table class="table"><thead><tr><th>From</th><th>To</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>';
-            
-            data.forEach(tx => {
-                const date = new Date(tx.timestamp).toLocaleDateString();
-                html += `<tr>
-                    <td><strong>${tx.from}</strong></td>
-                    <td><strong>${tx.to}</strong></td>
-                    <td>${tx.amount}</td>
-                    <td><span class="badge badge-success">${tx.status}</span></td>
-                    <td>${date}</td>
-                </tr>`;
+        const items = await requestJson("api/market/items");
+        const listings = Array.isArray(items) ? items.slice(0, 6) : [];
+
+        if (label) {
+            label.textContent = `${listings.length} featured item${listings.length === 1 ? "" : "s"}`;
+        }
+
+        if (!listings.length) {
+            target.innerHTML = '<div class="listing-empty">No live listings yet. Publish an item from the seller console.</div>';
+            return;
+        }
+
+        target.innerHTML = listings.map(item => `
+            <article class="listing-card">
+                <span class="listing-type">${escapeHtml(item.type || "collectible")}</span>
+                <h4>${escapeHtml(item.name || "Untitled Item")}</h4>
+                <p>${escapeHtml(item.description || "No description provided for this listing.")}</p>
+                <div class="listing-meta">
+                    <div>
+                        <div class="listing-price">${formatNumber(item.price || 0)} STP</div>
+                        <small>Seller: ${escapeHtml(item.sellerId || "unknown")}</small>
+                    </div>
+                    <span class="json-chip">${escapeHtml(item.status || "active")}</span>
+                </div>
+            </article>
+        `).join("");
+    } catch (error) {
+        if (label) {
+            label.textContent = "Unable to load";
+        }
+        target.innerHTML = `<div class="listing-empty">${escapeHtml(error.message)}</div>`;
+    }
+}
+
+async function loadMarketTransactions() {
+    try {
+        const data = await requestJson("api/market/transactions");
+        renderTable(
+            "marketTxResult",
+            [
+                { label: "Buyer", render: row => row.buyerId || "--" },
+                { label: "Seller", render: row => row.sellerId || "--" },
+                { label: "Price", render: row => formatNumber(row.price || 0) },
+                { label: "Date", render: row => formatDate(row.timestamp) }
+            ],
+            Array.isArray(data) ? data : []
+        );
+    } catch (error) {
+        renderFeedback("marketTxResult", error.message, true);
+    }
+}
+
+async function loadHealth() {
+    try {
+        const health = await requestJson("health");
+        renderTable(
+            "healthResult",
+            [
+                { label: "Metric", render: row => row.label },
+                { label: "Value", render: row => row.value }
+            ],
+            [
+                { label: "Status", value: health.status },
+                { label: "Service", value: health.service },
+                { label: "Version", value: health.version },
+                { label: "Timestamp", value: formatDate(health.timestamp) }
+            ]
+        );
+    } catch (error) {
+        renderFeedback("healthResult", error.message, true);
+    }
+}
+
+function registerSubmit(formId, handler) {
+    const form = document.getElementById(formId);
+    if (form) {
+        form.addEventListener("submit", handler);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    registerSubmit("createWalletForm", async event => {
+        event.preventDefault();
+        const userId = document.getElementById("userId").value.trim();
+        const userName = document.getElementById("userName").value.trim();
+
+        try {
+            const payload = await requestJson("api/wallet/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId, userName })
             });
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        } else {
-            container.innerHTML = '<div class="alert alert-info">No transactions found</div>';
+            renderJson("createWalletResult", payload, "Wallet created successfully");
+            event.target.reset();
+            refreshHeroMetrics();
+        } catch (error) {
+            renderFeedback("createWalletResult", error.message, true);
         }
-    } catch (error) {
-        showResult('transactionsResult', { error: error.message }, true);
-    }
-});
+    });
 
-// ===== MARKETPLACE ENDPOINTS =====
+    registerSubmit("viewWalletForm", async event => {
+        event.preventDefault();
+        const userId = document.getElementById("viewUserId").value.trim();
 
-// List Item
-document.getElementById('listItemForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const sellerId = document.getElementById('sellerId').value;
-    const name = document.getElementById('itemName').value;
-    const price = parseInt(document.getElementById('itemPrice').value);
-    const type = document.getElementById('itemType').value;
-    const description = document.getElementById('itemDesc').value;
-    
-    try {
-        const response = await fetch(`${API_BASE}api/market/items`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sellerId, name, price, type, description })
-        });
-        
-        const data = await response.json();
-        showResult('listItemResult', data, !response.ok);
-        
-        if (response.ok) {
-            document.getElementById('listItemForm').reset();
+        try {
+            const payload = await requestJson(`api/wallet/${encodeURIComponent(userId)}`);
+            renderJson("viewWalletResult", payload, "Wallet details");
+        } catch (error) {
+            renderFeedback("viewWalletResult", error.message, true);
         }
-    } catch (error) {
-        showResult('listItemResult', { error: error.message }, true);
-    }
-});
+    });
 
-// View Items
-document.getElementById('viewItemsBtn')?.addEventListener('click', async () => {
-    try {
-        const response = await fetch(`${API_BASE}api/market/items`);
-        const data = await response.json();
-        
-        const container = document.getElementById('viewItemsResult');
-        container.classList.add('show');
-        
-        if (Array.isArray(data) && data.length > 0) {
-            let html = `<div class="alert alert-success">Found ${data.length} item(s) in marketplace</div>`;
-            html += '<table class="table"><thead><tr><th>Name</th><th>Price</th><th>Type</th><th>Status</th><th>Seller</th></tr></thead><tbody>';
-            
-            data.forEach(item => {
-                html += `<tr>
-                    <td><strong>${item.name}</strong></td>
-                    <td>${item.price}</td>
-                    <td><span class="badge badge-info">${item.type}</span></td>
-                    <td><span class="badge badge-success">${item.status}</span></td>
-                    <td>${item.sellerId}</td>
-                </tr>`;
+    registerSubmit("transferForm", async event => {
+        event.preventDefault();
+        const fromUserId = document.getElementById("fromUserId").value.trim();
+        const toUserId = document.getElementById("toUserId").value.trim();
+        const amount = Number(document.getElementById("transferAmount").value);
+
+        try {
+            const payload = await requestJson("api/wallet/transfer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ fromUserId, toUserId, amount })
             });
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        } else {
-            container.innerHTML = '<div class="alert alert-info">No items in marketplace</div>';
+            renderJson("transferResult", payload, "Transfer completed");
+            event.target.reset();
+            refreshHeroMetrics();
+        } catch (error) {
+            renderFeedback("transferResult", error.message, true);
         }
-    } catch (error) {
-        showResult('viewItemsResult', { error: error.message }, true);
-    }
-});
+    });
 
-// Buy Item
-document.getElementById('buyItemForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const itemId = document.getElementById('buyItemId').value;
-    const buyerId = document.getElementById('buyerId').value;
-    
-    try {
-        const response = await fetch(`${API_BASE}api/market/items/${itemId}/buy`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ buyerId })
-        });
-        
-        const data = await response.json();
-        showResult('buyItemResult', data, !response.ok);
-        
-        if (response.ok) {
-            document.getElementById('buyItemForm').reset();
+    registerSubmit("transactionsForm", async event => {
+        event.preventDefault();
+        const userId = document.getElementById("txUserId").value.trim();
+
+        try {
+            const payload = await requestJson(`api/wallet/${encodeURIComponent(userId)}/transactions`);
+            renderTable(
+                "transactionsResult",
+                [
+                    { label: "From", render: row => row.from || "--" },
+                    { label: "To", render: row => row.to || "--" },
+                    { label: "Amount", render: row => formatNumber(row.amount || 0) },
+                    { label: "Status", render: row => row.status || "--" },
+                    { label: "Date", render: row => formatDate(row.timestamp) }
+                ],
+                Array.isArray(payload) ? payload : []
+            );
+        } catch (error) {
+            renderFeedback("transactionsResult", error.message, true);
         }
-    } catch (error) {
-        showResult('buyItemResult', { error: error.message }, true);
-    }
-});
+    });
 
-// Market Transactions
-document.getElementById('marketTxBtn')?.addEventListener('click', async () => {
-    try {
-        const response = await fetch(`${API_BASE}api/market/transactions`);
-        const data = await response.json();
-        
-        const container = document.getElementById('marketTxResult');
-        container.classList.add('show');
-        
-        if (Array.isArray(data) && data.length > 0) {
-            let html = `<div class="alert alert-success">Found ${data.length} transaction(s)</div>`;
-            html += '<table class="table"><thead><tr><th>Buyer</th><th>Seller</th><th>Price</th><th>Date</th></tr></thead><tbody>';
-            
-            data.forEach(tx => {
-                const date = new Date(tx.timestamp).toLocaleDateString();
-                html += `<tr>
-                    <td><strong>${tx.buyerId}</strong></td>
-                    <td><strong>${tx.sellerId}</strong></td>
-                    <td>${tx.price}</td>
-                    <td>${date}</td>
-                </tr>`;
+    registerSubmit("listItemForm", async event => {
+        event.preventDefault();
+        const sellerId = document.getElementById("sellerId").value.trim();
+        const name = document.getElementById("itemName").value.trim();
+        const price = Number(document.getElementById("itemPrice").value);
+        const type = document.getElementById("itemType").value.trim();
+        const description = document.getElementById("itemDesc").value.trim();
+
+        try {
+            const payload = await requestJson("api/market/items", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sellerId, name, price, type, description })
             });
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        } else {
-            container.innerHTML = '<div class="alert alert-info">No marketplace transactions yet</div>';
+            renderJson("listItemResult", payload, "Listing published");
+            event.target.reset();
+            await loadListings();
+            refreshHeroMetrics();
+        } catch (error) {
+            renderFeedback("listItemResult", error.message, true);
         }
-    } catch (error) {
-        showResult('marketTxResult', { error: error.message }, true);
-    }
-});
+    });
 
-// ===== BLOCKCHAIN ENDPOINTS =====
+    registerSubmit("buyItemForm", async event => {
+        event.preventDefault();
+        const itemId = document.getElementById("buyItemId").value.trim();
+        const buyerId = document.getElementById("buyerId").value.trim();
 
-// Get Token Info
-document.getElementById('getTokenBtn')?.addEventListener('click', async () => {
-    try {
-        const response = await fetch(`${API_BASE}api/token`);
-        const data = await response.json();
-        showResult('tokenResult', data, !response.ok);
-    } catch (error) {
-        showResult('tokenResult', { error: error.message }, true);
-    }
-});
+        try {
+            const payload = await requestJson(`api/market/items/${encodeURIComponent(itemId)}/buy`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ buyerId })
+            });
+            renderJson("buyItemResult", payload, "Purchase completed");
+            event.target.reset();
+            await Promise.all([loadListings(), loadMarketTransactions(), refreshHeroMetrics()]);
+        } catch (error) {
+            renderFeedback("buyItemResult", error.message, true);
+        }
+    });
 
-// Get Blockchain Info
-document.getElementById('getBlockchainBtn')?.addEventListener('click', async () => {
-    try {
-        const response = await fetch(`${API_BASE}api/blockchain/info`);
-        const data = await response.json();
-        showResult('blockchainResult', data, !response.ok);
-    } catch (error) {
-        showResult('blockchainResult', { error: error.message }, true);
-    }
-});
+    registerSubmit("balanceForm", async event => {
+        event.preventDefault();
+        const address = document.getElementById("balanceAddress").value.trim();
 
-// Check Balance
-document.getElementById('balanceForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const address = document.getElementById('balanceAddress').value;
-    
-    try {
-        const response = await fetch(`${API_BASE}api/blockchain/balance/${address}`);
-        const data = await response.json();
-        showResult('balanceResult', data, !response.ok);
-    } catch (error) {
-        showResult('balanceResult', { error: error.message }, true);
-    }
-});
+        try {
+            const payload = await requestJson(`api/blockchain/balance/${encodeURIComponent(address)}`);
+            renderJson("balanceResult", payload, "Address balance");
+        } catch (error) {
+            renderFeedback("balanceResult", error.message, true);
+        }
+    });
 
-// Get Supply Info
-document.getElementById('getSupplyBtn')?.addEventListener('click', async () => {
-    try {
-        const response = await fetch(`${API_BASE}api/blockchain/supply`);
-        const data = await response.json();
-        showResult('supplyResult', data, !response.ok);
-    } catch (error) {
-        showResult('supplyResult', { error: error.message }, true);
-    }
-});
+    document.getElementById("refreshListingsBtn")?.addEventListener("click", loadListings);
+    document.getElementById("marketTxBtn")?.addEventListener("click", loadMarketTransactions);
+    document.getElementById("healthBtn")?.addEventListener("click", loadHealth);
 
-// ===== HEALTH CHECK =====
+    document.getElementById("getTokenBtn")?.addEventListener("click", async () => {
+        try {
+            renderJson("tokenResult", await requestJson("api/token"), "Token profile");
+        } catch (error) {
+            renderFeedback("tokenResult", error.message, true);
+        }
+    });
 
-document.getElementById('healthBtn')?.addEventListener('click', async () => {
-    try {
-        const response = await fetch(`${API_BASE}health`);
-        const data = await response.json();
-        
-        const container = document.getElementById('healthResult');
-        container.classList.add('show');
-        
-        let html = `<div class="alert alert-success">
-            <strong><i class="fas fa-check-circle"></i> System is Healthy!</strong>
-        </div>`;
-        html += '<table class="table"><tbody>';
-        html += `<tr><td><strong>Status</strong></td><td>${data.status}</td></tr>`;
-        html += `<tr><td><strong>Service</strong></td><td>${data.service}</td></tr>`;
-        html += `<tr><td><strong>Version</strong></td><td>${data.version}</td></tr>`;
-        html += `<tr><td><strong>Timestamp</strong></td><td>${new Date(data.timestamp).toLocaleString()}</td></tr>`;
-        html += '</tbody></table>';
-        
-        container.innerHTML = html;
-    } catch (error) {
-        showResult('healthResult', { error: error.message }, true);
-    }
-});
+    document.getElementById("getBlockchainBtn")?.addEventListener("click", async () => {
+        try {
+            renderJson("blockchainResult", await requestJson("api/blockchain/info"), "Blockchain information");
+        } catch (error) {
+            renderFeedback("blockchainResult", error.message, true);
+        }
+    });
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('✓ Stampcoin Platform Frontend Loaded');
-    console.log('✓ API Base:', API_BASE);
-    console.log('✓ 23 API endpoints available');
-    
-    // Auto-check health on load
-    setTimeout(() => {
-        document.getElementById('healthBtn')?.click();
-    }, 800);
+    document.getElementById("getSupplyBtn")?.addEventListener("click", async () => {
+        try {
+            renderJson("supplyResult", await requestJson("api/blockchain/supply"), "Supply information");
+        } catch (error) {
+            renderFeedback("supplyResult", error.message, true);
+        }
+    });
+
+    refreshHeroMetrics();
+    loadListings();
+    loadHealth();
 });
