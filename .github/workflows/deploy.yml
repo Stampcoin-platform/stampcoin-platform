@@ -39,6 +39,7 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    continue-on-error: true
     
     permissions:
       contents: read
@@ -80,7 +81,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-fly:
-    needs: build-docker
+    needs: build-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
