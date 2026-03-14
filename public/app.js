@@ -298,6 +298,12 @@ document.addEventListener("DOMContentLoaded", () => {
       friend_request: "fa-handshake",
       friend_request_response: "fa-handshake-simple",
     };
+        const THEME_ORDER = ["classic", "pro", "collector"];
+        const THEME_LABELS = {
+                classic: "Classic",
+                pro: "Pro Exchange",
+                collector: "Collector"
+        };
     const web3State = {
         provider: null,
         signer: null,
@@ -351,32 +357,70 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        feed.innerHTML = communityPosts.map(post => `
-            <article class="feed-post" data-post-id="${escapeHtml(post.id || post.createdAt || post.title)}">
+        feed.innerHTML = communityPosts.map(post => {
+            const likeCount = Number(post.reactions?.like || 0);
+            const loveCount = Number(post.reactions?.love || 0);
+            const wowCount = Number(post.reactions?.wow || 0);
+            const commentCount = Array.isArray(post.comments) ? post.comments.length : 0;
+            const shareCount = Number(post.shares || 0);
+            const totalReactions = likeCount + loveCount + wowCount;
+            const postId = escapeHtml(post.id || post.createdAt || post.title);
+            const author = escapeHtml(post.authorId || "stampbook-user");
+            const initials = escapeHtml((post.authorId || "SB").slice(0, 2).toUpperCase());
+            return `
+            <article class="feed-post" data-post-id="${postId}">
                 <div class="feed-head">
                     <div class="feed-author">
-                        <span class="story-avatar">${escapeHtml((post.authorId || "SB").slice(0, 2).toUpperCase())}</span>
-                        <span><strong>${escapeHtml(post.authorId || "stampbook-user")}</strong> · ${escapeHtml(formatDate(post.createdAt || Date.now()))}</span>
+                        <span class="feed-avatar">${initials}</span>
+                        <span class="feed-author-meta">
+                            <strong>${author}</strong>
+                            <small>${escapeHtml(formatDate(post.createdAt || Date.now()))} · STP Feed</small>
+                        </span>
                     </div>
+                    <button class="feed-more" type="button" aria-label="Post options"><i class="fa-solid fa-ellipsis"></i></button>
                 </div>
                 <h4>${escapeHtml(post.title || "New stamp update")}</h4>
                 <p>${escapeHtml(post.body || "")}</p>
                 ${post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="Stamp preview for ${escapeHtml(post.title || "post")}">` : ""}
+                <div class="feed-stats">
+                    <span><i class="fa-solid fa-heart"></i> ${totalReactions} reactions</span>
+                    <span>${commentCount} comments · ${shareCount} shares</span>
+                </div>
                 <div class="feed-actions">
-                    <button type="button" data-action="like">Like (${Number(post.reactions?.like || 0)})</button>
-                    <button type="button" data-action="love">Love (${Number(post.reactions?.love || 0)})</button>
-                    <button type="button" data-action="wow">Wow (${Number(post.reactions?.wow || 0)})</button>
-                    <button type="button" data-action="share">Share (${Number(post.shares || 0)})</button>
+                    <button type="button" data-action="like"><i class="fa-regular fa-thumbs-up"></i> Like (${likeCount})</button>
+                    <button type="button" data-action="love"><i class="fa-regular fa-heart"></i> Love (${loveCount})</button>
+                    <button type="button" data-action="wow"><i class="fa-regular fa-face-surprise"></i> Wow (${wowCount})</button>
+                    <button type="button" data-action="share"><i class="fa-solid fa-share"></i> Share (${shareCount})</button>
                 </div>
                 <form class="feed-comment-form" data-action="comment">
-                    <input name="comment" placeholder="Write a comment..." required>
-                    <button type="submit">Comment</button>
+                    <span class="feed-comment-avatar">${initials}</span>
+                    <input name="comment" placeholder="Write a public comment..." required>
+                    <button type="submit">Post</button>
                 </form>
                 <div class="feed-comments">
-                    ${(post.comments || []).slice(-3).map(comment => `<div class="comment-item"><strong>${escapeHtml(comment.authorId || "user")}</strong>: ${escapeHtml(comment.text || "")}</div>`).join("")}
+                    ${(post.comments || []).slice(-3).map(comment => `<div class="comment-item"><strong>${escapeHtml(comment.authorId || "user")}</strong><span>${escapeHtml(comment.text || "")}</span></div>`).join("")}
                 </div>
             </article>
-        `).join("");
+        `;
+        }).join("");
+    }
+
+    function setTheme(themeName) {
+        const normalized = THEME_ORDER.includes(themeName) ? themeName : "classic";
+        document.body.setAttribute("data-theme", normalized);
+        localStorage.setItem("stampbook-theme", normalized);
+        const label = document.getElementById("themeToggleLabel");
+        if (label) {
+            label.textContent = THEME_LABELS[normalized] || "Classic";
+        }
+    }
+
+    function nextTheme(currentTheme) {
+        const currentIndex = THEME_ORDER.indexOf(currentTheme);
+        if (currentIndex < 0) {
+            return THEME_ORDER[0];
+        }
+        return THEME_ORDER[(currentIndex + 1) % THEME_ORDER.length];
     }
 
     function getPostByElementTarget(target) {
@@ -1593,6 +1637,11 @@ document.addEventListener("DOMContentLoaded", () => {
         panel.hidden = !panel.hidden;
     });
 
+    document.getElementById("themeToggleBtn")?.addEventListener("click", () => {
+        const activeTheme = document.body.getAttribute("data-theme") || "classic";
+        setTheme(nextTheme(activeTheme));
+    });
+
     document.getElementById("aiCloseBtn")?.addEventListener("click", () => {
         const panel = document.getElementById("aiPanel");
         if (panel) panel.hidden = true;
@@ -1617,6 +1666,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadNotifications();
     handleSocialRoute();
     syncTopNav();
+    setTheme(localStorage.getItem("stampbook-theme") || "classic");
 
     refreshHeroMetrics();
     loadListings();
