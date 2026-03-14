@@ -472,165 +472,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return document.getElementById("profileUserName")?.textContent || "stampbook-user";
     }
 
-    function parseSocialRoute() {
-        const selected = document.getElementById("groupPostGroupId")?.value || "";
-        if (socialState && typeof socialState.parseSocialRoute === "function") {
-            return socialState.parseSocialRoute(window.location.hash || "", selected);
-        }
-        const hash = (window.location.hash || "").replace(/^#/, "").trim();
-        if (hash.startsWith("profile/")) {
-            return { view: "profile", value: decodeURIComponent(hash.slice("profile/".length)) };
-        }
-        if (hash.startsWith("group/")) {
-            return { view: "group", value: decodeURIComponent(hash.slice("group/".length)) };
-        }
-        if (hash === "group") {
-            return { view: "group", value: selected };
-        }
-        return { view: "feed", value: "" };
-    }
-
-    function setSocialView(viewName) {
-        const feed = document.getElementById("stampbook-social");
-        const profile = document.getElementById("socialProfileView");
-        const group = document.getElementById("socialGroupView");
-        if (!feed || !profile || !group) return;
-
-        const views = [
-            { el: feed, name: "feed" },
-            { el: profile, name: "profile" },
-            { el: group, name: "group" }
-        ];
-
-        views.forEach(({ el, name }) => {
-            const show = viewName === name;
-            if (!show) {
-                el.hidden = true;
-                el.classList.remove("section-enter", "section-enter-active");
-                return;
-            }
-
-            el.hidden = false;
-            el.classList.add("section-enter");
-            requestAnimationFrame(() => {
-                el.classList.add("section-enter-active");
-            });
-            window.setTimeout(() => {
-                el.classList.remove("section-enter", "section-enter-active");
-            }, 260);
-        });
-    }
-
-    function renderProfileTimeline(profile) {
-        const title = document.getElementById("profileViewTitle");
-        const stats = document.getElementById("profileTimelineStats");
-        const posts = document.getElementById("profileTimelinePosts");
-        if (title) {
-            title.textContent = `Profile: ${profile.userId}`;
-        }
-        if (stats) {
-            stats.innerHTML = `
-                <div class="json-panel">
-                    <pre>${escapeHtml(JSON.stringify(profile.stats || {}, null, 2))}</pre>
-                </div>
-            `;
-        }
-        if (!posts) return;
-        const rows = Array.isArray(profile.latestPosts) ? profile.latestPosts : [];
-        posts.innerHTML = rows.length
-            ? rows.map(post => `
-                <article class="feed-post">
-                    <h4>${escapeHtml(post.title || "Post")}</h4>
-                    <p>${escapeHtml(post.body || "")}</p>
-                    <div class="mini-row"><span>${escapeHtml(formatDate(post.createdAt))}</span></div>
-                </article>
-            `).join("")
-            : '<div class="empty-state">No profile posts yet.</div>';
-    }
-
-    function renderGroupTimeline(group) {
-        const title = document.getElementById("groupViewTitle");
-        const meta = document.getElementById("groupTimelineMeta");
-        const posts = document.getElementById("groupTimelinePosts");
-        if (title) {
-            title.textContent = `Group: ${group.name || group.id}`;
-        }
-        if (meta) {
-            meta.innerHTML = `
-                <div class="feedback success">
-                    <strong>${escapeHtml(group.name || "Group")}</strong>
-                    <span>${escapeHtml(group.about || "")}</span>
-                </div>
-                <div class="mini-row"><span>Members</span><strong>${Number((group.members || []).length)}</strong></div>
-            `;
-        }
-        if (!posts) return;
-        const rows = Array.isArray(group.posts) ? group.posts : [];
-        posts.innerHTML = rows.length
-            ? rows.map(post => `
-                <article class="feed-post">
-                    <h4>${escapeHtml(post.authorId || "member")}</h4>
-                    <p>${escapeHtml(post.body || "")}</p>
-                    <div class="mini-row"><span>${escapeHtml(formatDate(post.createdAt))}</span></div>
-                </article>
-            `).join("")
-            : '<div class="empty-state">No group posts yet.</div>';
-    }
-
-    async function loadProfileTimeline(userId) {
-        if (!userId) {
-            setSocialView("feed");
-            return;
-        }
-        try {
-            const profile = await requestJson(`api/social/profile/${encodeURIComponent(userId)}`);
-            renderProfileTimeline(profile);
-            setSocialView("profile");
-        } catch {
-            setSocialView("feed");
-        }
-    }
-
-    async function loadGroupTimeline(groupId) {
-        if (!groupId) {
-            setSocialView("feed");
-            return;
-        }
-        try {
-            const group = await requestJson(`api/social/groups/${encodeURIComponent(groupId)}`);
-            renderGroupTimeline(group);
-            setSocialView("group");
-        } catch {
-            setSocialView("feed");
-        }
-    }
-
-    async function handleSocialRoute() {
-        const route = parseSocialRoute();
-        if (route.view === "profile") {
-            await loadProfileTimeline(route.value);
-            return;
-        }
-        if (route.view === "group") {
-            await loadGroupTimeline(route.value);
-            return;
-        }
-        setSocialView("feed");
-    }
-
-    function syncTopNav() {
-        const hash = window.location.hash || "#hero";
-        const normalizedHash = (socialState && typeof socialState.normalizeTopNavHash === "function")
-            ? socialState.normalizeTopNavHash(hash)
-            : hash;
-        const tabs = document.querySelectorAll(".topnav .nav-tab");
-        tabs.forEach(tab => {
-            const target = tab.getAttribute("data-nav-target") || tab.getAttribute("href") || "";
-            const active = target && normalizedHash.startsWith(target);
-            tab.classList.toggle("active", active);
-        });
-    }
-
     function renderFriendsBoard(payload) {
         const board = document.getElementById("friendsBoard");
         if (!board) return;
@@ -775,6 +616,27 @@ document.addEventListener("DOMContentLoaded", () => {
             renderFriendsBoard({ incoming: [], outgoing: [], friends: [] });
         }
     }
+
+    const socialRuntime = (socialCore && typeof socialCore.createSocialRuntime === "function")
+        ? socialCore.createSocialRuntime({
+            requestJson,
+            escapeHtml,
+            formatDate,
+            socialState,
+            getSelectedGroupId: () => document.getElementById("groupPostGroupId")?.value || "",
+            loadSocialBootstrap,
+            loadCommunityPosts,
+            loadGroups,
+            loadFriendsBoard,
+            loadNotifications,
+            setTheme,
+            setCompactMode,
+            setLeftRailCollapsed,
+            compactModeStorageKey: COMPACT_MODE_STORAGE_KEY,
+            leftRailStorageKey: LEFT_RAIL_STORAGE_KEY,
+            notificationPollIntervalMs: 30000
+        })
+        : null;
 
     function appendAiMessage(text, role) {
         const log = document.getElementById("aiLog");
@@ -1173,9 +1035,9 @@ document.addEventListener("DOMContentLoaded", () => {
             getNotificationOffset: () => notificationOffset,
             setNotificationOffset: value => { notificationOffset = value; },
             notificationPageSize: NOTIFICATION_PAGE_SIZE,
-            setSocialView,
-            handleSocialRoute,
-            syncTopNav
+            setSocialView: viewName => socialRuntime?.setSocialView(viewName),
+            handleSocialRoute: () => socialRuntime?.handleSocialRoute(),
+            syncTopNav: () => socialRuntime?.syncTopNav()
         });
     }
 
@@ -1473,22 +1335,8 @@ document.addEventListener("DOMContentLoaded", () => {
         event.target.reset();
     });
 
-    if (socialCore && typeof socialCore.initializeSocialExperience === "function") {
-        socialCore.initializeSocialExperience({
-            loadSocialBootstrap,
-            loadCommunityPosts,
-            loadGroups,
-            loadFriendsBoard,
-            loadNotifications,
-            handleSocialRoute,
-            syncTopNav,
-            setTheme,
-            setCompactMode,
-            setLeftRailCollapsed,
-            compactModeStorageKey: COMPACT_MODE_STORAGE_KEY,
-            leftRailStorageKey: LEFT_RAIL_STORAGE_KEY,
-            notificationPollIntervalMs: 30000
-        });
+    if (socialRuntime && typeof socialRuntime.initializeSocialExperience === "function") {
+        socialRuntime.initializeSocialExperience();
     } else {
         loadSocialBootstrap();
         loadCommunityPosts();
