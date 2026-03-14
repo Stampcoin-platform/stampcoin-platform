@@ -206,9 +206,10 @@
                         <p class="eyebrow">Stampbook Social</p>
                         <h2>تجربة اجتماعية شبيهة فيس بوك لهواة الطوابع والمقتنيات</h2>
                     </div>
+                    <button class="button button-ghost compact-button" id="leftRailToggleBtn" type="button">Hide Left Rail</button>
                 </div>
                 <div class="stampbook-layout">
-                    <aside class="stampbook-side">
+                    <aside class="stampbook-side" id="stampbookLeftRail">
                         <article class="studio-card compact-card quick-nav-card">
                             <h3>Shortcuts</h3>
                             <a href="#stampbook-social" class="quick-link"><i class="fa-solid fa-newspaper"></i><span>News Feed</span></a>
@@ -218,7 +219,10 @@
                             <a href="#nft-mint-studio" class="quick-link"><i class="fa-solid fa-cube"></i><span>NFT Studio</span></a>
                         </article>
                         <article class="studio-card compact-card">
-                            <h3>Stories</h3>
+                            <div class="card-header-row">
+                                <h3>Stories</h3>
+                                <span class="mini-label">24h highlights</span>
+                            </div>
                             <div class="story-rail" id="storyRail"></div>
                         </article>
                         <article class="studio-card compact-card">
@@ -235,6 +239,11 @@
                                     <span>What's new in your collection?</span>
                                     <textarea id="sbPostText" rows="3" placeholder="Share stamp insights, listing updates, or collector stories..." required></textarea>
                                 </label>
+                                <div class="composer-quick-actions" role="group" aria-label="Quick actions">
+                                    <button type="button" data-compose-action="photo"><i class="fa-solid fa-image"></i> Photo/Video</button>
+                                    <button type="button" data-compose-action="tag"><i class="fa-solid fa-user-tag"></i> Tag Collector</button>
+                                    <button type="button" data-compose-action="feeling"><i class="fa-regular fa-face-smile"></i> Feeling</button>
+                                </div>
                                 <label>
                                     <span>Optional image URL</span>
                                     <input id="sbPostImage" placeholder="https://.../collection.jpg">

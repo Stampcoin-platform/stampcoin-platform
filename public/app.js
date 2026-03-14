@@ -304,6 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 pro: "Pro Exchange",
                 collector: "Collector"
         };
+        const LEFT_RAIL_STORAGE_KEY = "stampbook-left-rail-collapsed";
     const web3State = {
         provider: null,
         signer: null,
@@ -317,15 +318,40 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderStories() {
         const rail = document.getElementById("storyRail");
         if (!rail) return;
-        rail.innerHTML = storyItems.map(story => `
-            <article class="story-item">
-                <span class="story-avatar">${escapeHtml(story.name.slice(0, 2).toUpperCase())}</span>
-                <div>
-                    <strong>${escapeHtml(story.name)}</strong>
-                    <p>${escapeHtml(story.tag)}</p>
+        const gradients = [
+            "linear-gradient(145deg, #245f97, #0d8b9d)",
+            "linear-gradient(145deg, #2f4ca5, #1d7cc8)",
+            "linear-gradient(145deg, #9b5d1f, #d48f37)",
+            "linear-gradient(145deg, #136f5d, #2e9d7f)",
+            "linear-gradient(145deg, #6b3d9a, #8f5bc6)"
+        ];
+
+        rail.innerHTML = storyItems.map((story, index) => {
+            const name = String(story.name || "Collector");
+            const initials = name.slice(0, 2).toUpperCase();
+            const tag = String(story.tag || "Stampbook update");
+            const cover = gradients[index % gradients.length];
+            return `
+            <article class="story-item" style="background:${cover}">
+                <div class="story-overlay"></div>
+                <span class="story-avatar">${escapeHtml(initials)}</span>
+                <div class="story-copy">
+                    <strong>${escapeHtml(name)}</strong>
+                    <p>${escapeHtml(tag)}</p>
                 </div>
             </article>
-        `).join("");
+        `;
+        }).join("");
+    }
+
+    function setLeftRailCollapsed(collapsed) {
+        const isCollapsed = Boolean(collapsed);
+        document.body.classList.toggle("left-rail-collapsed", isCollapsed);
+        localStorage.setItem(LEFT_RAIL_STORAGE_KEY, isCollapsed ? "1" : "0");
+        const toggle = document.getElementById("leftRailToggleBtn");
+        if (toggle) {
+            toggle.textContent = isCollapsed ? "Show Left Rail" : "Hide Left Rail";
+        }
     }
 
     function renderPeopleSuggestions() {
@@ -1642,6 +1668,29 @@ document.addEventListener("DOMContentLoaded", () => {
         setTheme(nextTheme(activeTheme));
     });
 
+    document.getElementById("leftRailToggleBtn")?.addEventListener("click", () => {
+        const collapsed = document.body.classList.contains("left-rail-collapsed");
+        setLeftRailCollapsed(!collapsed);
+    });
+
+    document.getElementById("stampbookComposerForm")?.addEventListener("click", event => {
+        const actionButton = event.target.closest("button[data-compose-action]");
+        if (!actionButton) return;
+        const action = actionButton.getAttribute("data-compose-action");
+        const input = document.getElementById("sbPostText");
+        if (!input) return;
+
+        const suffix = action === "photo"
+            ? " [photo update]"
+            : action === "tag"
+                ? " @collector"
+                : " feeling excited about new stamps";
+
+        const current = input.value.trim();
+        input.value = current ? `${current}${suffix}` : suffix.trim();
+        input.focus();
+    });
+
     document.getElementById("aiCloseBtn")?.addEventListener("click", () => {
         const panel = document.getElementById("aiPanel");
         if (panel) panel.hidden = true;
@@ -1667,6 +1716,7 @@ document.addEventListener("DOMContentLoaded", () => {
     handleSocialRoute();
     syncTopNav();
     setTheme(localStorage.getItem("stampbook-theme") || "classic");
+    setLeftRailCollapsed(localStorage.getItem(LEFT_RAIL_STORAGE_KEY) === "1");
 
     refreshHeroMetrics();
     loadListings();

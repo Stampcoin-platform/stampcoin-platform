@@ -599,6 +599,14 @@ textarea {
     gap: 14px;
 }
 
+body.left-rail-collapsed .stampbook-layout {
+    grid-template-columns: minmax(0, 1fr) 250px;
+}
+
+body.left-rail-collapsed #stampbookLeftRail {
+    display: none;
+}
+
 .stampbook-side .studio-card {
     border-color: rgba(17, 35, 63, 0.07);
 }
@@ -683,18 +691,34 @@ textarea {
 }
 
 .story-rail {
-    display: grid;
+    display: flex;
     gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
 }
 
 .story-item {
+    min-width: 122px;
+    max-width: 122px;
+    height: 160px;
+    position: relative;
+    border-radius: 14px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
     display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    border: 1px solid rgba(15, 30, 47, 0.12);
-    border-radius: 12px;
-    background: rgba(248, 252, 255, 0.95);
+    flex-direction: column;
+    justify-content: space-between;
+    color: #fff;
+    overflow: hidden;
+    box-shadow: 0 10px 20px rgba(12, 28, 50, 0.18);
+}
+
+.story-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(8, 16, 28, 0.06), rgba(8, 16, 28, 0.54));
+    pointer-events: none;
 }
 
 .story-avatar {
@@ -708,6 +732,50 @@ textarea {
     font-family: "Space Grotesk", sans-serif;
     color: #fff;
     background: linear-gradient(140deg, #0f4c81, #0a7f8f);
+    position: relative;
+    z-index: 1;
+    border: 2px solid rgba(255, 255, 255, 0.75);
+}
+
+.story-copy {
+    position: relative;
+    z-index: 1;
+}
+
+.story-copy strong {
+    display: block;
+    font-size: 0.82rem;
+}
+
+.story-copy p {
+    margin: 3px 0 0;
+    font-size: 0.72rem;
+    line-height: 1.25;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.composer-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.composer-quick-actions button {
+    border: 1px solid rgba(15, 30, 47, 0.12);
+    border-radius: 999px;
+    background: rgba(248, 252, 255, 0.9);
+    color: var(--ink-strong);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.composer-quick-actions button:hover {
+    background: rgba(16, 50, 93, 0.1);
 }
 
 .trending-ticker {
@@ -1185,6 +1253,10 @@ textarea {
         grid-template-columns: 1fr;
     }
 
+    body.left-rail-collapsed .stampbook-layout {
+        grid-template-columns: 1fr;
+    }
+
     .stampbook-side.right {
         order: 3;
     }
@@ -1197,6 +1269,12 @@ textarea {
 
     .feed-comment-form {
         flex-direction: column;
+    }
+
+    .story-item {
+        min-width: 108px;
+        max-width: 108px;
+        height: 148px;
     }
 }
 
