@@ -928,6 +928,44 @@ body.left-rail-collapsed #stampbookLeftRail {
     margin-top: 10px;
 }
 
+.social-empty {
+    border: 1px dashed rgba(15, 30, 47, 0.18);
+    border-radius: 12px;
+    background: rgba(248, 252, 255, 0.94);
+    padding: 14px 12px;
+    text-align: center;
+    display: grid;
+    gap: 6px;
+}
+
+.social-empty i {
+    font-size: 1.08rem;
+    color: var(--navy);
+}
+
+.social-empty strong {
+    color: var(--ink-strong);
+    font-size: 0.86rem;
+}
+
+.social-empty p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
+.section-enter {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.section-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
 .mini-row {
     display: flex;
     align-items: center;
@@ -1324,6 +1362,26 @@ body.left-rail-collapsed #stampbookLeftRail {
     right: 20px;
     bottom: 18px;
     z-index: 20;
+}
+
+.floating-compose {
+    position: fixed;
+    right: 22px;
+    bottom: 84px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    color: #fff;
+    background: linear-gradient(145deg, #2d67c8, #0f8f6f);
+    box-shadow: 0 14px 28px rgba(10, 28, 52, 0.32);
+    cursor: pointer;
+    z-index: 19;
+    font-size: 1rem;
+}
+
+.floating-compose:hover {
+    transform: translateY(-2px);
 }
 
 .ai-toggle {
@@ -2027,6 +2085,11 @@ textarea:focus {
         right: 10px;
         left: 10px;
         bottom: 12px;
+    }
+
+    .floating-compose {
+        right: 16px;
+        bottom: 78px;
     }
 
     .ai-toggle {

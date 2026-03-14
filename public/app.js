@@ -572,9 +572,29 @@ document.addEventListener("DOMContentLoaded", () => {
         const group = document.getElementById("socialGroupView");
         if (!feed || !profile || !group) return;
 
-        feed.hidden = viewName !== "feed";
-        profile.hidden = viewName !== "profile";
-        group.hidden = viewName !== "group";
+        const views = [
+            { el: feed, name: "feed" },
+            { el: profile, name: "profile" },
+            { el: group, name: "group" }
+        ];
+
+        views.forEach(({ el, name }) => {
+            const show = viewName === name;
+            if (!show) {
+                el.hidden = true;
+                el.classList.remove("section-enter", "section-enter-active");
+                return;
+            }
+
+            el.hidden = false;
+            el.classList.add("section-enter");
+            requestAnimationFrame(() => {
+                el.classList.add("section-enter-active");
+            });
+            window.setTimeout(() => {
+                el.classList.remove("section-enter", "section-enter-active");
+            }, 260);
+        });
     }
 
     function renderProfileTimeline(profile) {
@@ -694,6 +714,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const outgoing = Array.isArray(payload?.outgoing) ? payload.outgoing : [];
         const friends = Array.isArray(payload?.friends) ? payload.friends : [];
 
+        if (!incoming.length && !outgoing.length && !friends.length) {
+            board.innerHTML = `
+                <div class="social-empty">
+                    <i class="fa-solid fa-user-group"></i>
+                    <strong>No friend activity yet</strong>
+                    <p>Send your first friend request to start building your collector circle.</p>
+                </div>
+            `;
+            return;
+        }
+
         board.innerHTML = `
             <div class="mini-row"><strong>Friends</strong><span>${friends.length}</span></div>
             ${friends.slice(0, 5).map(id => `<div class="mini-row"><span>${escapeHtml(id)}</span></div>`).join("")}
@@ -727,7 +758,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     </span>
                 </div>
             `).join("")
-            : '<div class="mini-row"><span>No groups yet</span></div>';
+            : `
+                <div class="social-empty">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <strong>No groups created yet</strong>
+                    <p>Create your first collector group and invite members.</p>
+                </div>
+            `;
 
         select.innerHTML = rows.length
             ? rows.map(group => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.name)}</option>`).join("")
@@ -798,7 +835,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         board.innerHTML = rows.length
             ? rows.join("") + loadMoreHtml
-            : '<div class="mini-row"><span>No notifications yet</span></div>';
+            : `
+                <div class="social-empty">
+                    <i class="fa-solid fa-bell-slash"></i>
+                    <strong>No notifications in this filter</strong>
+                    <p>New follows, comments, and requests will appear here.</p>
+                </div>
+            `;
     }
 
     async function loadNotifications(append = false) {
@@ -1815,6 +1858,18 @@ document.addEventListener("DOMContentLoaded", () => {
             input.value = `I need help with ${topic}`;
             input.focus();
         }
+    });
+
+    document.getElementById("floatingComposeBtn")?.addEventListener("click", () => {
+        if (window.location.hash !== "#stampbook-social") {
+            window.location.hash = "#stampbook-social";
+        }
+        setSocialView("feed");
+        window.setTimeout(() => {
+            const textarea = document.getElementById("sbPostText");
+            textarea?.focus();
+            textarea?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 80);
     });
 
     registerSubmit("aiForm", async event => {
