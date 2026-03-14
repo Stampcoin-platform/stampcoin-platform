@@ -91,6 +91,23 @@ body::before {
     z-index: -1;
 }
 
+@keyframes fadeLiftIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes skeletonPulse {
+    0% { opacity: 0.55; }
+    50% { opacity: 0.95; }
+    100% { opacity: 0.55; }
+}
+
 a {
     color: inherit;
     text-decoration: none;
@@ -128,6 +145,37 @@ textarea {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+body.compact-mode .site-shell {
+    width: min(1320px, calc(100vw - 26px));
+    margin-top: 12px;
+}
+
+body.compact-mode .topbar {
+    padding: 10px 14px;
+    border-radius: 18px;
+}
+
+body.compact-mode .topbar .nav-tab {
+    min-height: 44px;
+    min-width: 80px;
+    font-size: 0.7rem;
+}
+
+body.compact-mode .studio-card,
+body.compact-mode .listing-stage,
+body.compact-mode .side-card {
+    padding: 16px;
+    border-radius: 16px;
+}
+
+body.compact-mode .feed-post {
+    padding: 11px;
+}
+
+body.compact-mode .feed-post p {
+    font-size: 0.9rem;
 }
 
 .theme-toggle {
@@ -712,6 +760,7 @@ body.left-rail-collapsed #stampbookLeftRail {
     color: #fff;
     overflow: hidden;
     box-shadow: 0 10px 20px rgba(12, 28, 50, 0.18);
+    animation: fadeLiftIn 0.32s ease both;
 }
 
 .story-overlay {
@@ -752,6 +801,33 @@ body.left-rail-collapsed #stampbookLeftRail {
     font-size: 0.72rem;
     line-height: 1.25;
     color: rgba(255, 255, 255, 0.85);
+}
+
+.skeleton-block {
+    background: linear-gradient(140deg, rgba(18, 58, 97, 0.45), rgba(31, 96, 151, 0.45)) !important;
+}
+
+.skeleton-post {
+    border-style: dashed;
+}
+
+.skeleton-line {
+    display: block;
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(160, 180, 207, 0.35), rgba(213, 225, 241, 0.7), rgba(160, 180, 207, 0.35));
+    animation: skeletonPulse 1.1s ease-in-out infinite;
+}
+
+.skeleton-line.short {
+    width: 62%;
+}
+
+.skeleton-pill {
+    background: rgba(223, 233, 248, 0.72) !important;
+    color: transparent !important;
+    animation: skeletonPulse 1.1s ease-in-out infinite;
 }
 
 .composer-quick-actions {
@@ -987,6 +1063,7 @@ body.left-rail-collapsed #stampbookLeftRail {
     border: 1px solid rgba(15, 30, 47, 0.11);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 250, 255, 0.87));
     box-shadow: 0 10px 22px rgba(12, 28, 50, 0.06);
+    animation: fadeLiftIn 0.28s ease both;
 }
 
 .feed-head {

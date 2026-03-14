@@ -305,6 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 collector: "Collector"
         };
         const LEFT_RAIL_STORAGE_KEY = "stampbook-left-rail-collapsed";
+        const COMPACT_MODE_STORAGE_KEY = "stampbook-compact-mode";
     const web3State = {
         provider: null,
         signer: null,
@@ -344,6 +345,43 @@ document.addEventListener("DOMContentLoaded", () => {
         }).join("");
     }
 
+    function renderStoriesSkeleton() {
+        const rail = document.getElementById("storyRail");
+        if (!rail) return;
+        rail.innerHTML = Array.from({ length: 5 }, () => `
+            <article class="story-item skeleton-block">
+                <div class="story-overlay"></div>
+                <span class="story-avatar skeleton-pill"></span>
+                <div class="story-copy">
+                    <strong class="skeleton-line"></strong>
+                    <p class="skeleton-line short"></p>
+                </div>
+            </article>
+        `).join("");
+    }
+
+    function renderFeedSkeleton() {
+        const feed = document.getElementById("communityFeed");
+        if (!feed) return;
+        feed.innerHTML = Array.from({ length: 3 }, () => `
+            <article class="feed-post skeleton-post">
+                <div class="feed-head">
+                    <div class="feed-author">
+                        <span class="feed-avatar skeleton-pill"></span>
+                        <span class="feed-author-meta">
+                            <strong class="skeleton-line"></strong>
+                            <small class="skeleton-line short"></small>
+                        </span>
+                    </div>
+                </div>
+                <h4 class="skeleton-line"></h4>
+                <p class="skeleton-line"></p>
+                <p class="skeleton-line short"></p>
+                <div class="feed-stats skeleton-line"></div>
+            </article>
+        `).join("");
+    }
+
     function setLeftRailCollapsed(collapsed) {
         const isCollapsed = Boolean(collapsed);
         document.body.classList.toggle("left-rail-collapsed", isCollapsed);
@@ -351,6 +389,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const toggle = document.getElementById("leftRailToggleBtn");
         if (toggle) {
             toggle.textContent = isCollapsed ? "Show Left Rail" : "Hide Left Rail";
+        }
+    }
+
+    function setCompactMode(enabled) {
+        const isCompact = Boolean(enabled);
+        document.body.classList.toggle("compact-mode", isCompact);
+        localStorage.setItem(COMPACT_MODE_STORAGE_KEY, isCompact ? "1" : "0");
+        const label = document.getElementById("compactToggleLabel");
+        if (label) {
+            label.textContent = isCompact ? "Compact On" : "Compact Off";
         }
     }
 
@@ -471,6 +519,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function loadCommunityPosts() {
+        renderFeedSkeleton();
         try {
             const rows = await requestJson("api/community/posts");
             communityPosts.length = 0;
@@ -484,6 +533,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function loadSocialBootstrap() {
+        renderStoriesSkeleton();
         try {
             const payload = await requestJson("api/social/bootstrap");
             storyItems = Array.isArray(payload.stories) ? payload.stories : storyItems;
@@ -1719,6 +1769,11 @@ document.addEventListener("DOMContentLoaded", () => {
         setTheme(nextTheme(activeTheme));
     });
 
+    document.getElementById("compactToggleBtn")?.addEventListener("click", () => {
+        const enabled = document.body.classList.contains("compact-mode");
+        setCompactMode(!enabled);
+    });
+
     document.getElementById("leftRailToggleBtn")?.addEventListener("click", () => {
         const collapsed = document.body.classList.contains("left-rail-collapsed");
         setLeftRailCollapsed(!collapsed);
@@ -1782,6 +1837,7 @@ document.addEventListener("DOMContentLoaded", () => {
     handleSocialRoute();
     syncTopNav();
     setTheme(localStorage.getItem("stampbook-theme") || "classic");
+    setCompactMode(localStorage.getItem(COMPACT_MODE_STORAGE_KEY) === "1");
     setLeftRailCollapsed(localStorage.getItem(LEFT_RAIL_STORAGE_KEY) === "1");
 
     refreshHeroMetrics();
