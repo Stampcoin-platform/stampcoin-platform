@@ -176,6 +176,11 @@
                 const target = tab.getAttribute("data-nav-target") || tab.getAttribute("href") || "";
                 const active = target && normalizedHash.startsWith(target);
                 tab.classList.toggle("active", active);
+                if (active) {
+                    tab.setAttribute("aria-current", "page");
+                } else {
+                    tab.removeAttribute("aria-current");
+                }
             });
         }
 
