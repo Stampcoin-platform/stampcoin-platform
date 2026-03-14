@@ -357,15 +357,24 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderPeopleSuggestions() {
         const list = document.getElementById("peopleYouMayKnow");
         if (!list) return;
-        list.innerHTML = peopleSuggestions.map(person => `
+        list.innerHTML = peopleSuggestions.map(person => {
+            const name = String(person.name || "Collector");
+            const initials = name.slice(0, 2).toUpperCase();
+            const mutual = (name.length % 4) + 1;
+            return `
             <div class="person-row">
-                <div>
-                    <strong>${escapeHtml(person.name)}</strong>
-                    <p>${escapeHtml(person.role)}</p>
+                <div class="person-card-main">
+                    <span class="person-avatar">${escapeHtml(initials)}</span>
+                    <div>
+                        <strong>${escapeHtml(name)}</strong>
+                        <p>${escapeHtml(person.role)}</p>
+                        <small>${mutual} mutual collector${mutual > 1 ? "s" : ""}</small>
+                    </div>
                 </div>
                 <button type="button" data-follow-target="${escapeHtml(person.id || person.name)}">Follow</button>
             </div>
-        `).join("");
+        `;
+        }).join("");
     }
 
     function renderTrendingTopics() {
@@ -403,7 +412,12 @@ document.addEventListener("DOMContentLoaded", () => {
                             <small>${escapeHtml(formatDate(post.createdAt || Date.now()))} · STP Feed</small>
                         </span>
                     </div>
-                    <button class="feed-more" type="button" aria-label="Post options"><i class="fa-solid fa-ellipsis"></i></button>
+                    <button class="feed-more" type="button" data-action="menu" aria-label="Post options"><i class="fa-solid fa-ellipsis"></i></button>
+                </div>
+                <div class="feed-menu" hidden>
+                    <button type="button" data-post-menu-action="save">Save post</button>
+                    <button type="button" data-post-menu-action="pin">Pin to top</button>
+                    <button type="button" data-post-menu-action="report">Report</button>
                 </div>
                 <h4>${escapeHtml(post.title || "New stamp update")}</h4>
                 <p>${escapeHtml(post.body || "")}</p>
@@ -1163,8 +1177,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("communityFeed")?.addEventListener("click", async event => {
         const actionBtn = event.target.closest("button[data-action]");
-        if (!actionBtn) return;
+        const menuActionBtn = event.target.closest("button[data-post-menu-action]");
+
+        if (menuActionBtn) {
+            const action = menuActionBtn.getAttribute("data-post-menu-action");
+            const post = getPostByElementTarget(menuActionBtn);
+            if (post && action) {
+                const actionLabel = action === "save"
+                    ? "Post saved to your collection."
+                    : action === "pin"
+                        ? "Post pinned at the top of your feed."
+                        : "Report submitted. Moderation team notified.";
+                renderFeedback("stampbookComposerResult", actionLabel, false);
+            }
+            const menu = menuActionBtn.closest(".feed-menu");
+            if (menu) {
+                menu.hidden = true;
+            }
+            return;
+        }
+
+        if (!actionBtn) {
+            // close open menus when clicking elsewhere in feed
+            document.querySelectorAll(".feed-menu").forEach(menu => {
+                menu.hidden = true;
+            });
+            return;
+        }
         const action = actionBtn.getAttribute("data-action");
+        if (action === "menu") {
+            const postEl = actionBtn.closest(".feed-post");
+            const currentMenu = postEl?.querySelector(".feed-menu");
+            if (!currentMenu) return;
+            const shouldOpen = currentMenu.hidden;
+            document.querySelectorAll(".feed-menu").forEach(menu => {
+                menu.hidden = true;
+            });
+            currentMenu.hidden = !shouldOpen;
+            return;
+        }
         const post = getPostByElementTarget(actionBtn);
         if (!post) return;
 
@@ -1694,6 +1745,21 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("aiCloseBtn")?.addEventListener("click", () => {
         const panel = document.getElementById("aiPanel");
         if (panel) panel.hidden = true;
+    });
+
+    document.getElementById("aiContacts")?.addEventListener("click", event => {
+        const contact = event.target.closest("button[data-ai-contact]");
+        if (!contact) return;
+        const topic = contact.getAttribute("data-ai-contact") || "support";
+        const panel = document.getElementById("aiPanel");
+        const input = document.getElementById("aiInput");
+        if (panel) {
+            panel.hidden = false;
+        }
+        if (input) {
+            input.value = `I need help with ${topic}`;
+            input.focus();
+        }
     });
 
     registerSubmit("aiForm", async event => {

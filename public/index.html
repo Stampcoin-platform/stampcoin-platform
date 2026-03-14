@@ -1164,13 +1164,23 @@
                 <strong>Stampbook AI Assistant</strong>
                 <button id="aiCloseBtn" type="button" aria-label="Close assistant"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="ai-log" id="aiLog">
-                <div class="ai-msg bot">Hello. I can help with wallets, purchases, NFT minting fees, and transaction troubleshooting.</div>
+            <div class="ai-dock-body">
+                <aside class="ai-contacts" id="aiContacts">
+                    <button type="button" data-ai-contact="wallet transfers"><i class="fa-solid fa-wallet"></i><span>Wallet Desk</span></button>
+                    <button type="button" data-ai-contact="market purchase"><i class="fa-solid fa-store"></i><span>Market Ops</span></button>
+                    <button type="button" data-ai-contact="nft minting"><i class="fa-solid fa-cube"></i><span>NFT Support</span></button>
+                    <button type="button" data-ai-contact="account verification"><i class="fa-solid fa-shield"></i><span>Trust Center</span></button>
+                </aside>
+                <div class="ai-chat-main">
+                    <div class="ai-log" id="aiLog">
+                        <div class="ai-msg bot">Hello. I can help with wallets, purchases, NFT minting fees, and transaction troubleshooting.</div>
+                    </div>
+                    <form id="aiForm" class="ai-form">
+                        <input id="aiInput" placeholder="Ask about wallet, payments, NFT minting, or support..." required>
+                        <button class="button button-primary" type="submit">Send</button>
+                    </form>
+                </div>
             </div>
-            <form id="aiForm" class="ai-form">
-                <input id="aiInput" placeholder="Ask about wallet, payments, NFT minting, or support..." required>
-                <button class="button button-primary" type="submit">Send</button>
-            </form>
         </section>
     </div>
 </body>
