@@ -472,40 +472,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return document.getElementById("profileUserName")?.textContent || "stampbook-user";
     }
 
-    function renderFriendsBoard(payload) {
-        const board = document.getElementById("friendsBoard");
-        if (!board) return;
-        const incoming = Array.isArray(payload?.incoming) ? payload.incoming : [];
-        const outgoing = Array.isArray(payload?.outgoing) ? payload.outgoing : [];
-        const friends = Array.isArray(payload?.friends) ? payload.friends : [];
-
-        if (!incoming.length && !outgoing.length && !friends.length) {
-            board.innerHTML = `
-                <div class="social-empty">
-                    <i class="fa-solid fa-user-group"></i>
-                    <strong>No friend activity yet</strong>
-                    <p>Send your first friend request to start building your collector circle.</p>
-                </div>
-            `;
-            return;
-        }
-
-        board.innerHTML = `
-            <div class="mini-row"><strong>Friends</strong><span>${friends.length}</span></div>
-            ${friends.slice(0, 5).map(id => `<div class="mini-row"><span>${escapeHtml(id)}</span></div>`).join("")}
-            ${incoming.length ? incoming.map(req => `
-                <div class="mini-row" data-request-id="${escapeHtml(req.id)}">
-                    <span>${escapeHtml(req.fromUserId)} wants to connect</span>
-                    <span class="mini-actions">
-                        <button type="button" data-request-action="accept">Accept</button>
-                        <button type="button" data-request-action="reject">Reject</button>
-                    </span>
-                </div>
-            `).join("") : ""}
-            ${outgoing.length ? `<div class="mini-row"><span>Pending sent: ${outgoing.length}</span></div>` : ""}
-        `;
-    }
-
     function renderGroupsList(groups) {
         const list = document.getElementById("groupsList");
         const select = document.getElementById("groupPostGroupId");
@@ -513,27 +479,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!list || !select) return;
 
         const rows = Array.isArray(groups) ? groups : [];
-        list.innerHTML = rows.length
-            ? rows.slice(0, 8).map(group => `
-                <div class="mini-row">
-                    <span><strong>${escapeHtml(group.name)}</strong> (${Number((group.members || []).length)})</span>
-                    <span class="mini-actions">
-                        <a class="mini-link" href="#group/${escapeHtml(group.id)}">Open</a>
-                        <button type="button" data-group-join="${escapeHtml(group.id)}">Join</button>
-                    </span>
-                </div>
-            `).join("")
-            : `
-                <div class="social-empty">
-                    <i class="fa-solid fa-layer-group"></i>
-                    <strong>No groups created yet</strong>
-                    <p>Create your first collector group and invite members.</p>
-                </div>
-            `;
-
-        select.innerHTML = rows.length
-            ? rows.map(group => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.name)}</option>`).join("")
-            : '<option value="">No groups</option>';
+        if (socialUi && typeof socialUi.renderGroupsListHtml === "function") {
+            list.innerHTML = socialUi.renderGroupsListHtml(rows, escapeHtml);
+            select.innerHTML = socialUi.renderGroupOptionsHtml(rows, escapeHtml);
+        } else {
+            list.innerHTML = "";
+            select.innerHTML = '<option value="">No groups</option>';
+        }
 
         if (openGroup && rows.length) {
             openGroup.setAttribute("href", `#group/${encodeURIComponent(rows[0].id)}`);
@@ -543,31 +495,36 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderNotificationBoard(payload) {
         const board = document.getElementById("notificationBoard");
         const badge = document.getElementById("notificationCountBadge");
-        const filterButtons = document.querySelectorAll("#notificationFilters [data-notification-filter]");
+        const filterButtons = Array.from(document.querySelectorAll("#notificationFilters [data-notification-filter]"));
         if (!board || !badge) return;
 
-        filterButtons.forEach(button => {
-            const selected = button.getAttribute("data-notification-filter") === notificationFilter;
-            button.classList.toggle("active", selected);
-        });
-
-        if (socialNotifications && typeof socialNotifications.renderNotificationBoardHtml === "function") {
-            const rendered = socialNotifications.renderNotificationBoardHtml(payload, {
+        if (socialNotifications && typeof socialNotifications.renderNotificationBoard === "function") {
+            socialNotifications.renderNotificationBoard(payload, {
+                board,
+                badge,
+                filterButtons,
                 notificationFilter,
                 notificationOffset,
                 notificationPageSize: NOTIFICATION_PAGE_SIZE,
                 escapeHtml,
                 formatDate
             });
-            badge.textContent = String(rendered.unread || 0);
-            badge.hidden = Number(rendered.unread || 0) <= 0;
-            board.innerHTML = rendered.html;
             return;
         }
 
         const unread = Number(payload?.unread || 0);
         badge.textContent = String(unread);
         badge.hidden = unread <= 0;
+        board.innerHTML = "";
+    }
+
+    function renderFriendsBoard(payload) {
+        const board = document.getElementById("friendsBoard");
+        if (!board) return;
+        if (socialUi && typeof socialUi.renderFriendsBoardHtml === "function") {
+            board.innerHTML = socialUi.renderFriendsBoardHtml(payload, escapeHtml);
+            return;
+        }
         board.innerHTML = "";
     }
 

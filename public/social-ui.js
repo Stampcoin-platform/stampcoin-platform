@@ -107,9 +107,71 @@
         }).join("");
     }
 
+    function renderFriendsBoardHtml(payload, escapeHtml) {
+        const incoming = Array.isArray(payload && payload.incoming) ? payload.incoming : [];
+        const outgoing = Array.isArray(payload && payload.outgoing) ? payload.outgoing : [];
+        const friends = Array.isArray(payload && payload.friends) ? payload.friends : [];
+
+        if (!incoming.length && !outgoing.length && !friends.length) {
+            return `
+                <div class="social-empty">
+                    <i class="fa-solid fa-user-group"></i>
+                    <strong>No friend activity yet</strong>
+                    <p>Send your first friend request to start building your collector circle.</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="mini-row"><strong>Friends</strong><span>${friends.length}</span></div>
+            ${friends.slice(0, 5).map(id => `<div class="mini-row"><span>${escapeHtml(id)}</span></div>`).join("")}
+            ${incoming.length ? incoming.map(req => `
+                <div class="mini-row" data-request-id="${escapeHtml(req.id)}">
+                    <span>${escapeHtml(req.fromUserId)} wants to connect</span>
+                    <span class="mini-actions">
+                        <button type="button" data-request-action="accept">Accept</button>
+                        <button type="button" data-request-action="reject">Reject</button>
+                    </span>
+                </div>
+            `).join("") : ""}
+            ${outgoing.length ? `<div class="mini-row"><span>Pending sent: ${outgoing.length}</span></div>` : ""}
+        `;
+    }
+
+    function renderGroupsListHtml(groups, escapeHtml) {
+        const rows = Array.isArray(groups) ? groups : [];
+        return rows.length
+            ? rows.slice(0, 8).map(group => `
+                <div class="mini-row">
+                    <span><strong>${escapeHtml(group.name)}</strong> (${Number((group.members || []).length)})</span>
+                    <span class="mini-actions">
+                        <a class="mini-link" href="#group/${escapeHtml(group.id)}">Open</a>
+                        <button type="button" data-group-join="${escapeHtml(group.id)}">Join</button>
+                    </span>
+                </div>
+            `).join("")
+            : `
+                <div class="social-empty">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <strong>No groups created yet</strong>
+                    <p>Create your first collector group and invite members.</p>
+                </div>
+            `;
+    }
+
+    function renderGroupOptionsHtml(groups, escapeHtml) {
+        const rows = Array.isArray(groups) ? groups : [];
+        return rows.length
+            ? rows.map(group => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.name)}</option>`).join("")
+            : '<option value="">No groups</option>';
+    }
+
     globalThis.StampbookSocialUI = {
         renderStoriesHtml,
         renderPeopleSuggestionsHtml,
-        renderCommunityFeedHtml
+        renderCommunityFeedHtml,
+        renderFriendsBoardHtml,
+        renderGroupsListHtml,
+        renderGroupOptionsHtml
     };
 })();

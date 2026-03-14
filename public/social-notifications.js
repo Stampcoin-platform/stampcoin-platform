@@ -82,7 +82,29 @@
         return { html, unread };
     }
 
+    function renderNotificationBoard(payload, options) {
+        const board = options.board;
+        const badge = options.badge;
+        const filterButtons = options.filterButtons;
+        const notificationFilter = options.notificationFilter;
+
+        if (!board || !badge) {
+            return;
+        }
+
+        filterButtons.forEach(button => {
+            const selected = button.getAttribute("data-notification-filter") === notificationFilter;
+            button.classList.toggle("active", selected);
+        });
+
+        const rendered = renderNotificationBoardHtml(payload, options);
+        badge.textContent = String(rendered.unread || 0);
+        badge.hidden = Number(rendered.unread || 0) <= 0;
+        board.innerHTML = rendered.html;
+    }
+
     globalThis.StampbookSocialNotifications = {
-        renderNotificationBoardHtml
+        renderNotificationBoardHtml,
+        renderNotificationBoard
     };
 })();
