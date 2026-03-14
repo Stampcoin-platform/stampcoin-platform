@@ -108,6 +108,19 @@ body::before {
     100% { opacity: 0.55; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
 a {
     color: inherit;
     text-decoration: none;

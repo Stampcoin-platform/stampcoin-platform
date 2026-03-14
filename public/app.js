@@ -469,7 +469,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <h4>${escapeHtml(post.title || "New stamp update")}</h4>
                 <p>${escapeHtml(post.body || "")}</p>
-                ${post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="Stamp preview for ${escapeHtml(post.title || "post")}">` : ""}
+                ${post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="Stamp preview for ${escapeHtml(post.title || "post")}" loading="lazy" decoding="async">` : ""}
                 <div class="feed-stats">
                     <span><i class="fa-solid fa-heart"></i> ${totalReactions} reactions</span>
                     <span>${commentCount} comments · ${shareCount} shares</span>
@@ -518,8 +518,11 @@ document.addEventListener("DOMContentLoaded", () => {
         return communityPosts.find(post => String(post.id || post.createdAt || post.title) === String(postId));
     }
 
-    async function loadCommunityPosts() {
-        renderFeedSkeleton();
+    async function loadCommunityPosts(options = {}) {
+        const { showSkeleton = true } = options;
+        if (showSkeleton) {
+            renderFeedSkeleton();
+        }
         try {
             const rows = await requestJson("api/community/posts");
             communityPosts.length = 0;
@@ -1235,7 +1238,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     authorId: document.getElementById("profileUserName")?.textContent || "collector-pro"
                 })
             });
-            await loadCommunityPosts();
+            await loadCommunityPosts({ showSkeleton: false });
             renderFeedback("culturePostResult", "Post published to community feed.", false);
             event.target.reset();
         } catch (error) {
@@ -1260,7 +1263,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     authorId
                 })
             });
-            await loadCommunityPosts();
+            await loadCommunityPosts({ showSkeleton: false });
             renderFeedback("stampbookComposerResult", "Published to Stampbook feed.", false);
             event.target.reset();
         } catch (error) {
@@ -1327,7 +1330,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 renderFeedback("stampbookComposerResult", "Post shared successfully in Stampbook timeline.", false);
             }
-            await loadCommunityPosts();
+            await loadCommunityPosts({ showSkeleton: false });
         } catch (error) {
             renderFeedback("stampbookComposerResult", error.message, true);
         }
@@ -1352,7 +1355,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     authorId: document.getElementById("profileUserName")?.textContent || "you"
                 })
             });
-            await loadCommunityPosts();
+            await loadCommunityPosts({ showSkeleton: false });
         } catch (error) {
             renderFeedback("stampbookComposerResult", error.message, true);
         }
@@ -1901,6 +1904,9 @@ document.addEventListener("DOMContentLoaded", () => {
     loadTokenDist();
 
     window.setInterval(() => {
+        if (document.hidden) {
+            return;
+        }
         loadNotifications();
     }, 30000);
 });
