@@ -203,6 +203,37 @@ textarea {
 
 .dropdown-menu li i {
     color: var(--blue);
+}
+
+.top-search {
+    min-width: 260px;
+    max-width: 340px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 35, 63, 0.1);
+    background: rgba(247, 251, 255, 0.88);
+    padding: 0 12px;
+    min-height: 44px;
+}
+
+.top-search i {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+}
+
+.top-search input {
+    border: none;
+    background: transparent;
+    padding: 0;
+    min-height: 42px;
+    font-size: 0.9rem;
+}
+
+.top-search input:focus {
+    box-shadow: none;
+}
 
 .brand {
     display: flex;
@@ -225,6 +256,12 @@ textarea {
     font-size: 1.18rem;
     box-shadow: 0 12px 26px rgba(201, 139, 42, 0.35);
     border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.brand-mark img {
+    width: 34px;
+    height: 34px;
+    display: block;
 }
 
 .brand-copy {
@@ -499,6 +536,74 @@ textarea {
     display: grid;
     grid-template-columns: 250px minmax(0, 1fr) 250px;
     gap: 14px;
+}
+
+.stampbook-side .studio-card {
+    border-color: rgba(17, 35, 63, 0.07);
+}
+
+.quick-nav-card {
+    position: sticky;
+    top: 88px;
+}
+
+.quick-nav-card h3 {
+    margin-top: 0;
+}
+
+.quick-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 12px;
+    padding: 9px 10px;
+    color: var(--ink-strong);
+    font-weight: 600;
+    margin-bottom: 6px;
+    border: 1px solid transparent;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.quick-link:hover {
+    background: rgba(16, 50, 93, 0.06);
+    border-color: rgba(16, 50, 93, 0.12);
+    transform: translateX(2px);
+}
+
+.quick-link i {
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 50, 93, 0.1);
+    color: var(--navy);
+    font-size: 0.78rem;
+}
+
+.spotlight-card {
+    background: linear-gradient(170deg, rgba(255, 248, 234, 0.98), rgba(253, 241, 217, 0.8));
+    border: 1px solid rgba(201, 139, 42, 0.22);
+}
+
+.spotlight-card p {
+    margin: 6px 0 10px;
+    color: #66481d;
+    line-height: 1.55;
+}
+
+.spotlight-metrics {
+    display: grid;
+    gap: 6px;
+}
+
+.spotlight-metrics span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: #6d4a13;
 }
 
 .stampbook-main {
@@ -1452,6 +1557,12 @@ textarea:focus {
         flex: 0 0 auto;
     }
 
+    .top-search {
+        width: 100%;
+        max-width: none;
+        order: 3;
+    }
+
     .topbar-actions {
         width: 100%;
         flex-direction: row;
@@ -1462,6 +1573,10 @@ textarea:focus {
 
     .coin-chip {
         order: 1;
+    }
+
+    .quick-nav-card {
+        position: static;
     }
 
     .user-dropdown summary {

@@ -61,13 +61,17 @@
         <header class="topbar">
             <a class="brand" href="#hero">
                 <span class="brand-mark" aria-hidden="true">
-                    <i class="fa-solid fa-stamp"></i>
+                    <img src="/assets/stampbook-logo.svg" alt="Stampbook logo">
                 </span>
                 <span class="brand-copy">
                     <strong>Stampbook</strong>
                     <small>STP Social Chain</small>
                 </span>
             </a>
+            <label class="top-search" aria-label="Search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="search" placeholder="Search collectors, groups, NFTs...">
+            </label>
             <nav class="topnav">
                 <a class="nav-tab" data-nav-target="#stampbook-social" href="#stampbook-social" title="Feed">
                     <i class="fa-solid fa-house"></i>
@@ -201,6 +205,14 @@
                 </div>
                 <div class="stampbook-layout">
                     <aside class="stampbook-side">
+                        <article class="studio-card compact-card quick-nav-card">
+                            <h3>Shortcuts</h3>
+                            <a href="#stampbook-social" class="quick-link"><i class="fa-solid fa-newspaper"></i><span>News Feed</span></a>
+                            <a href="#social-notifications" class="quick-link"><i class="fa-solid fa-bell"></i><span>Notifications</span></a>
+                            <a href="#marketplace" class="quick-link"><i class="fa-solid fa-store"></i><span>Marketplace</span></a>
+                            <a href="#token-hub" class="quick-link"><i class="fa-solid fa-coins"></i><span>STP Wallet & Token</span></a>
+                            <a href="#nft-mint-studio" class="quick-link"><i class="fa-solid fa-cube"></i><span>NFT Studio</span></a>
+                        </article>
                         <article class="studio-card compact-card">
                             <h3>Stories</h3>
                             <div class="story-rail" id="storyRail"></div>
@@ -306,6 +318,15 @@
                                 <button type="button" data-notification-filter="requests">Requests</button>
                             </div>
                             <div class="social-mini-list" id="notificationBoard"></div>
+                        </article>
+                        <article class="studio-card compact-card spotlight-card">
+                            <h3>Stampbook Spotlight</h3>
+                            <p>ميزة المنصة: شبكة اجتماعية + تداول + NFT + Token داخل واجهة موحدة بدون تنقل مشتت.</p>
+                            <div class="spotlight-metrics">
+                                <span><i class="fa-solid fa-bolt"></i> Live social actions</span>
+                                <span><i class="fa-solid fa-lock"></i> Protected ops console</span>
+                                <span><i class="fa-solid fa-link"></i> On-chain ready stack</span>
+                            </div>
                         </article>
                     </aside>
                 </div>

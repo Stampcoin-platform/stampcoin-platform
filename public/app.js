@@ -542,10 +542,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function syncTopNav() {
         const hash = window.location.hash || "#hero";
+        const normalizedHash = (hash.startsWith("#profile/") || hash.startsWith("#group/"))
+            ? "#stampbook-social"
+            : hash;
         const tabs = document.querySelectorAll(".topnav .nav-tab");
         tabs.forEach(tab => {
             const target = tab.getAttribute("data-nav-target") || tab.getAttribute("href") || "";
-            const active = target && hash.startsWith(target);
+            const active = target && normalizedHash.startsWith(target);
             tab.classList.toggle("active", active);
         });
     }
