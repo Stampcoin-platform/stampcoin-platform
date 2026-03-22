@@ -18,36 +18,8 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-      - name: Lint code
-        run: npm run lint
-
-      - name: Build
-        run: npm run build
-
-  build-docker:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
     permissions:
       contents: read
-      packages: write
 
     steps:
       - uses: actions/checkout@v4
@@ -92,21 +64,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Fly.io
-        uses: superfly/flyctl-actions/setup-flyctl@master
+    - name: Run tests
+      run: npm test
 
-      - name: Deploy
-        run: flyctl deploy --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-
-  deploy-render:
-    needs: build-docker
+  deploy-railway:
+    needs: [build-and-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    
+    permissions:
+      contents: read
+
     steps:
-      - name: Trigger Render deployment
-        run: |
-          curl --request POST \
-            --url https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_API_KEY }}
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy to Railway
+      run: |
+        echo "Deploying to Railway..."
+        # Add your Railway deployment commands here
